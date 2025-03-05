@@ -36,6 +36,9 @@ new class extends Component {
                         <x-nav-link :href="route('users')" :active="request()->routeIs('users')" wire:navigate>
                             {{ __('Users') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('classes')" :active="request()->routeIs('classes')" wire:navigate>
+                            {{ __('Classes') }}
+                        </x-nav-link>
                     @endrole
                 </div>
             </div>
@@ -100,6 +103,9 @@ new class extends Component {
             @role('admin')
                 <x-responsive-nav-link :href="route('users')" :active="request()->routeIs('users')" wire:navigate>
                     {{ __('Users') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('classes')" :active="request()->routeIs('classes')" wire:navigate>
+                    {{ __('Classes') }}
                 </x-responsive-nav-link>
             @endrole
         </div>

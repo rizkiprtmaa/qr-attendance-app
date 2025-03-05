@@ -21,4 +21,8 @@ Route::view('create-user', 'admin.user.create')
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('create.user');
 
+Route::view('classes', 'admin.classes.index')
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('classes');
+
 require __DIR__ . '/auth.php';

@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Student;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class UserSeeder extends Seeder
@@ -13,20 +15,15 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@example',
-            'password' => bcrypt('password'),
-        ]);
+        $studentRole = Role::firstOrCreate(['name' => 'student']);
 
-        $admin->assignRole('admin');
+        $studentUsers = User::factory(10)->create();
+        foreach ($studentUsers as $studentUser) {
+            $studentUser->assignRole($studentRole);
 
-        $admin = User::factory()->create([
-            'name' => 'Teacher',
-            'email' => 'teacher@example',
-            'password' => bcrypt('password'),
-        ]);
-
-        $admin->assignRole('teacher');
+            Student::factory()->create([
+                'user_id' => $studentUser->id,
+            ]);
+        }
     }
 }

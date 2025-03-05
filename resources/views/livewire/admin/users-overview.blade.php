@@ -2,17 +2,22 @@
 
 use Livewire\Volt\Component;
 use App\Models\User;
+use App\Models\Student;
+use Livewire\Attributes\On;
 
 new class extends Component {
+    // Method untuk menginisialisasi data
+
     public $teachers;
-    public $students;
+    public $students_count;
+
     public $users;
 
-    // Method untuk menginisialisasi data
+    #[On('delete-user')]
     public function mount()
     {
         $this->teachers = User::role('teacher')->count();
-        $this->students = User::role('student')->count();
+        $this->students_count = Student::count();
         $this->users = User::count();
     }
 };
@@ -28,7 +33,7 @@ new class extends Component {
             </svg>
         </div>
         <div class="gap-5">
-            <p class="font-header text-xl font-medium">Jumlah Pengguna</p>
+            <p class="font-inter text-xl font-medium">Jumlah Pengguna</p>
             <p class="font-body">{{ $users }}</p>
         </div>
 
@@ -51,7 +56,7 @@ new class extends Component {
 
         </div>
         <div class="gap-5">
-            <p class="font-header text-xl font-medium">Jumlah Guru</p>
+            <p class="font-inter text-xl font-medium">Jumlah Guru</p>
             <p class="font-body">{{ $teachers }}</p>
         </div>
 
@@ -71,8 +76,8 @@ new class extends Component {
 
         </div>
         <div class="gap-5">
-            <p class="font-header text-xl font-medium">Jumlah Siswa</p>
-            <p class="font-body">{{ $students }}</p>
+            <p class="font-inter text-xl font-medium">Jumlah Siswa</p>
+            <p class="font-body">{{ $students_count }}</p>
         </div>
 
 

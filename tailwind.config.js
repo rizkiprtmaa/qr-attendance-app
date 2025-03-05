@@ -14,7 +14,7 @@ export default {
             fontFamily: {
                 sans: ["Figtree", ...defaultTheme.fontFamily.sans],
                 header: ["Outfit", ...defaultTheme.fontFamily.sans],
-                body: ["Inter", ...defaultTheme.fontFamily.sans],
+                inter: ["Inter", ...defaultTheme.fontFamily.sans],
             },
         },
     },
