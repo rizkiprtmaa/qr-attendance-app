@@ -18,15 +18,22 @@
                                 Users
                             </a>
                         </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="mx-1 h-3 w-3 text-gray-400 rtl:rotate-180" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="2" d="m1 9 4-4-4-4" />
+                                </svg>
+                                <a wire:navigate
+                                    class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Guru</a>
+                            </div>
+                        </li>
                     </ol>
                 </nav>
 
             </div>
-            <div>
-                <x-primary-button color="blue" href="{{ route('create.user') }}" wire:navigate
-                    class="flex flex-row items-center justify-center text-sm">Tambah
-                    Pengguna</x-primary-button>
-            </div>
+
         </div>
     </x-slot>
 
@@ -36,17 +43,17 @@
         class="mx-auto mt-4 max-w-7xl border-b border-gray-200 text-center text-sm font-medium text-gray-500 sm:px-6 lg:px-8 dark:border-gray-700 dark:text-gray-400">
         <ul class="-mb-px flex flex-wrap">
             <li class="me-2">
-                <a href="{{ route('users') }}"
-                    class="active border-blue-5z00 inline-block rounded-t-lg border-b-2 border-transparent p-4 text-blue-600">Overview</a>
+                <a href="{{ route('users') }}" wire:navigate
+                    class="inline-block rounded-t-lg p-4 hover:border-b-2 hover:border-gray-300 hover:text-gray-600">Overview</a>
             </li>
             <li class="me-2">
-                <a href="{{ route('teachers') }}" wire:navigate
-                    class="inline-block rounded-t-lg p-4 hover:border-b-2 hover:border-gray-300 hover:text-gray-600"
+                <a href="#"
+                    class="active inline-block rounded-t-lg border-b-2 border-blue-500 border-transparent p-4 text-blue-600"
                     aria-current="page">Guru</a>
             </li>
             <li class="me-2">
                 <a href="#"
-                    class="inline-block rounded-t-lg border-b-2 border-transparent p-4 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300">Siswa</a>
+                    class="inline-block rounded-t-lg border-b-2 border-transparent p-4 hover:border-gray-300 hover:text-gray-600">Siswa</a>
             </li>
 
         </ul>
@@ -55,12 +62,8 @@
     <div class="py-12">
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div>
-                <p class="mb-4 font-inter text-xl font-medium">Overview</p>
-                <livewire:admin.users-overview />
-            </div>
-            <div class="mt-8">
-                <p class="mb-4 font-inter text-xl font-medium">Kelola Pengguna</p>
-                <livewire:admin.users-table />
+                <p class="mb-4 font-inter text-xl font-medium">Kelola Guru</p>
+                <livewire:admin.teachers-table />
             </div>
 
         </div>

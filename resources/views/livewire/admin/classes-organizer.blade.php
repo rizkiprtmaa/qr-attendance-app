@@ -3,12 +3,18 @@
 use Livewire\Volt\Component;
 use App\Models\Major;
 use App\Models\Classes;
+use App\Models\Student;
+use App\Models\Teacher;
+use App\Models\SchoolYear;
+use Livewire\Attributes\On;
 
 new class extends Component {
     public $name;
     public $code;
     public $classesName;
     public $major;
+    public $schoolYear;
+    public $teacher;
 
     public function createMajor()
     {
@@ -31,16 +37,35 @@ new class extends Component {
         $major->delete();
     }
 
+    public function editMajor($id)
+    {
+        $major = Major::findOrFail($id);
+        $this->name = $major->name;
+        $this->code = $major->code;
+
+        $classes = Classes::where('major_id', $id)->get();
+        foreach ($classes as $class) {
+            $class->update([
+                'name' => $this->name,
+                'major_id' => $id,
+            ]);
+        }
+    }
+
     public function createClasses()
     {
         $this->validate([
             'classesName' => 'required|string',
             'major' => 'required',
+            'schoolYear' => 'required',
+            'teacher' => 'required',
         ]);
 
         Classes::create([
             'name' => $this->classesName,
             'major_id' => $this->major,
+            'school_year_id' => $this->schoolYear,
+            'teacher_id' => $this->teacher,
         ]);
 
         $this->reset();
@@ -52,11 +77,14 @@ new class extends Component {
         $class->delete();
     }
 
+    #[On('majorUpdated')]
     public function render(): mixed
     {
         return view('livewire.admin.classes-organizer', [
             'majors' => Major::all(),
             'classes' => Classes::with('major')->orderBy('created_at', 'desc')->get(),
+            'school_years' => SchoolYear::all(),
+            'teachers' => Teacher::all(),
         ]);
     }
 }; ?>
@@ -64,23 +92,44 @@ new class extends Component {
 <div x-data="{ showMajorModal: false, showClassesModal: false }">
     <div class="flex items-center justify-between">
         <p class="font-inter text-xl font-medium">Jurusan</p>
-        <button @click="showMajorModal = true"
-            class="flex flex-row items-center gap-2 rounded-lg border-t-2 border-t-white bg-gray-800 px-6 py-2 text-white hover:bg-gray-700 hover:shadow-2xl">
-            Tambah Jurusan <span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke-width="1.5" stroke="currentColor" class="size-6">
+        <x-primary-button type="button" color="blue" action="showMajorModal = true">
+            Tambah Jurusan
+            <x-slot:icon>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="size-6">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
-            </span></button>
+            </x-slot:icon>
+        </x-primary-button>
     </div>
 
+
+    @if ($majors->isEmpty())
+        <div class="flex min-h-[250px] flex-col items-center justify-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="size-6 text-white">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                </svg>
+
+            </div>
+            <div class="flex flex-col items-center gap-2">
+                <p class="text-md font-inter font-medium">Jurusan belum tersedia</p>
+                <p class="font-inter text-sm text-gray-500">Belum ada jurusan yang tersedia. Silahkan tambahkan jurusan
+                    terlebih
+                    dahulu.</p>
+            </div>
+        </div>
+    @endif
 
     {{-- Kelola Jurusan --}}
     <div class="mt-4 grid grid-cols-2 gap-4">
         @foreach ($majors as $major)
             <div class="flex w-full flex-row items-center gap-4 rounded-md border border-slate-400/40 bg-white px-5 py-5"
                 wire:key="major-{{ $major->id }}">
-                <div class="flex h-12 w-12 items-center justify-center rounded-md bg-gray-700 text-white">
+                <div class="flex h-12 w-12 items-center justify-center rounded-md bg-blue-400 text-white">
                     {{ substr($major->name, 0, 1) }}
                 </div>
                 <div class="flex w-full flex-row items-center justify-between">
@@ -110,7 +159,8 @@ new class extends Component {
 
                                     <p class="font-inter">Kelola Kelas</p>
                                 </x-dropdown-link>
-                                <x-dropdown-link href="#" class="flex flex-row items-center gap-2">
+                                <x-dropdown-link wire:navigate class="flex flex-row items-center gap-2"
+                                    href="{{ route('edit.major', $major->id) }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor" class="size-5">
                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -189,30 +239,50 @@ new class extends Component {
                 class="border-outline bg-surface-alt/60 dark:border-outline-dark dark:bg-surface-dark/20 flex flex-col-reverse justify-between gap-2 border-t p-4 sm:flex-row sm:items-center md:justify-end">
                 <button x-on:click="showMajorModal = false" type="button"
                     class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
-                <button x-on:click="showMajorModal = false" type="submit"
-                    class="border-primary text-on-primary focus-visible:outline-primary whitespace-nowrap rounded-md border bg-slate-900 px-4 py-2 text-center font-inter text-sm font-medium tracking-wide text-white transition hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Buat
-                    Jurusan</button>
+                <x-primary-button type="submit" color="blue">Buat Jurusan</x-primary-button>
                 </form>
             </div>
         </div>
     </div>
 
+
+
     <div class="mt-8 flex items-center justify-between">
         <p class="font-inter text-xl font-medium">Kelas</p>
-        <button @click="showClassesModal = true"
-            class="flex flex-row items-center gap-2 rounded-lg border-t-2 border-t-white bg-gray-800 px-6 py-2 text-white hover:bg-gray-700 hover:shadow-2xl">
-            Tambah Kelas <span><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke-width="1.5" stroke="currentColor" class="size-6">
+
+
+        <x-primary-button color="blue" action="showClassesModal = true">Tambah Kelas<x-slot:icon><svg
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="size-6">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-            </span></button>
+                </svg></x-slot:icon></x-primary-button>
     </div>
+
+    @if ($classes->isEmpty())
+        <div class="flex min-h-[250px] flex-col items-center justify-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                </svg>
+
+
+            </div>
+            <div class="flex flex-col items-center gap-2">
+                <p class="text-md font-inter font-medium">Kelas belum tersedia</p>
+                <p class="font-inter text-sm text-gray-500">Belum ada kelas yang tersedia. Silahkan tambahkan kelas
+                    terlebih
+                    dahulu.</p>
+            </div>
+        </div>
+    @endif
 
     {{-- Kelola Kelas --}}
     <div class="mt-4 grid grid-cols-4 gap-4">
         @foreach ($classes as $class)
-            <div class="rounded-2xl bg-gray-700 shadow-md" wire:key="class-{{ $class->id }}">
+            <div class="rounded-2xl bg-blue-400 shadow-md" wire:key="class-{{ $class->id }}">
                 <div
                     class="flex w-full flex-row items-center gap-4 rounded-xl border border-slate-400/40 bg-white px-5 py-5">
 
@@ -228,7 +298,7 @@ new class extends Component {
                     </div>
 
                 </div>
-                <div class="flex flex-row items-center justify-between rounded-b-xl bg-gray-700 px-4 py-3 text-white">
+                <div class="flex flex-row items-center justify-between rounded-b-xl bg-blue-400 px-4 py-3 text-white">
                     <div class="flex flex-row items-center gap-2">
                         <button><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="size-5">
@@ -248,10 +318,16 @@ new class extends Component {
                             </svg>
                         </button>
                     </div>
-                    <div>
-                        <p class="font-inter text-xs text-white"><span class="rounded-full bg-green-500 px-2 py-1">18
-                                Siswa</span></p>
-                    </div>
+                    <a class="flex cursor-pointer flex-row items-center gap-1" wire:navigate
+                        href="{{ route('classes.detail', $class->id) }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="size-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                        </svg>
+
+                        <p class="font-inter text-xs text-white">Kelola Kelas</p>
+                    </a>
 
                 </div>
             </div>
@@ -295,7 +371,7 @@ new class extends Component {
                         @enderror
                     </div>
 
-                    <div>
+                    <div class="mb-4">
                         <label for="major" class="font-inter text-sm font-semibold text-slate-500">Jurusan</label>
                         <select wire:model="major" class="w-full rounded-lg border-gray-300 text-sm">
                             <option value="null" disabled selected>--- Pilih Jurusan ---</option>
@@ -304,6 +380,36 @@ new class extends Component {
                             @endforeach
                         </select>
                         @error('major')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
+                                {{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="mb-4">
+                        <label for="school_year" class="font-inter text-sm font-semibold text-slate-500">Tahun
+                            Ajaran</label>
+                        <select name="school_year" wire:model="schoolYear"
+                            class="w-full rounded-lg border-gray-300 text-sm">
+                            <option value="null" disabled selected>--- Pilih Tahun Ajaran ---</option>
+                            @foreach ($school_years as $year)
+                                <option value="{{ $year->id }}">{{ $year->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('school_year')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
+                                {{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="mb-4">
+                        <label for="teacher" class="font-inter text-sm font-semibold text-slate-500">Wali
+                            Kelas</label>
+                        <select name="teacher" wire:model="teacher"
+                            class="w-full rounded-lg border-gray-300 text-sm">
+                            <option value="null" disabled selected>--- Pilih Wali Kelas ---</option>
+                            @foreach ($teachers as $teacher)
+                                <option value="{{ $teacher->id }}">{{ $teacher->user->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('school_year')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
                                 {{ $message }}</p>
                         @enderror
@@ -317,7 +423,7 @@ new class extends Component {
                     class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
                 <button x-on:click="showClassesModal = false" type="submit"
                     class="border-primary text-on-primary focus-visible:outline-primary whitespace-nowrap rounded-md border bg-slate-900 px-4 py-2 text-center font-inter text-sm font-medium tracking-wide text-white transition hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Buat
-                    Jurusan</button>
+                    Kelas</button>
                 </form>
             </div>
         </div>

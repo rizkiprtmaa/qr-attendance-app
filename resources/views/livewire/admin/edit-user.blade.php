@@ -1,14 +1,15 @@
 <?php
 
 use Livewire\Volt\Component;
-use Illuminate\Support\Facades\Hash;
+use Livewire\Attributes\Layout;
 use App\Models\User;
-use App\Models\Teacher;
-use App\Models\Student;
-use App\Models\Major;
-use App\Models\Classes;
 
-new class extends Component {
+new #[Layout('layouts.app')] class extends Component {
+    // Declare these properties explicitly
+    public User $user;
+    public $student;
+    public $teacher;
+    public $id;
     public $name;
     public $email;
     public $password;
@@ -20,53 +21,59 @@ new class extends Component {
     public $role;
     public $class;
 
-    public function with()
+    public function mount(User $user)
     {
-        return [
-            'roles' => Spatie\Permission\Models\Role::all(),
-            'majors' => Major::all(),
-            'classes' => Classes::all(),
-        ];
+        // Explicitly set the $user property
+        $this->user = $user;
+
+        // Load related models based on the role
+        $this->fill($user->toArray());
+        $this->id = $user->id;
+        $this->name = $user->name;
+        $this->email = $user->email;
+        $this->role = $user->roles->first()->name;
+
+        // Retrieve related models conditionally
+        if ($this->role == 'teacher') {
+            $this->teacher = $user->teacher;
+            $this->phoneNumber = $this->teacher->phone_number;
+            $this->NUPTK = $this->teacher->nuptk;
+        }
+
+        if ($this->role == 'student') {
+            $this->student = $user->student;
+            $this->NISN = $this->student->nisn;
+            $this->parentNumber = $this->student->parent_number;
+            $this->major = $this->student->major;
+            $this->class = $this->student->classes_id;
+        }
     }
 
-    public function submit()
+    public function editUser()
     {
-        // Validasi Umum Berdasarkan Role
         $this->validate([
-            'name' => 'required|string',
+            'name' => 'required',
             'email' => 'required|email',
-            'password' => 'required|min:8',
         ]);
 
         if ($this->role == 'teacher') {
-            // Validasi khusus untuk Guru
             $this->validate([
                 'phoneNumber' => 'required',
                 'NUPTK' => 'required',
             ]);
 
-            // Membuat user
-            $user = User::create([
+            $this->user->update([
                 'name' => $this->name,
                 'email' => $this->email,
-                'password' => Hash::make($this->password),
             ]);
 
-            // Menetapkan role guru
-            $user->assignRole($this->role);
-
-            // Membuat data guru
-            Teacher::create([
-                'user_id' => $user->id,
+            $this->teacher->update([
                 'phone_number' => $this->phoneNumber,
                 'nuptk' => $this->NUPTK,
             ]);
-
-            return $this->redirect(route('users'));
         }
 
         if ($this->role == 'student') {
-            // Validasi khusus untuk Siswa
             $this->validate([
                 'NISN' => 'required',
                 'parentNumber' => 'required',
@@ -74,33 +81,74 @@ new class extends Component {
                 'class' => 'required',
             ]);
 
-            // Membuat user
-            $user = User::create([
+            $this->user->update([
                 'name' => $this->name,
                 'email' => $this->email,
-                'password' => Hash::make($this->password),
             ]);
 
-            // Menetapkan role siswa
-            $user->assignRole($this->role);
-
-            // Membuat data siswa
-            Student::create([
-                'user_id' => $user->id,
+            $this->student->update([
                 'nisn' => $this->NISN,
                 'parent_number' => $this->parentNumber,
                 'major' => $this->major,
                 'classes_id' => $this->class,
             ]);
-            return $this->redirect(route('users'));
         }
-    }
-};
-?>
 
-<div>
-    <div class="mx-auto w-1/2" x-data="{ role: '', isTeacher: false, isStudent: false }">
-        <form wire:submit.prevent="submit">
+        // Fix typo in dispatch
+        $this->dispatch('user-updated');
+        return $this->redirect(route('users'));
+    }
+
+    public function with()
+    {
+        return [
+            'roles' => Spatie\Permission\Models\Role::all(),
+            'classes' => App\Models\Classes::all(),
+            'majors' => App\Models\Major::all(),
+        ];
+    }
+}; ?>
+
+<div class="flex flex-col gap-4">
+    <x-slot name="header">
+        <h2 class="text-2xl font-semibold leading-tight text-gray-800">
+            {{ __('Edit Pengguna') }}
+        </h2>
+        <nav class="mt-2.5 flex" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                <li class="inline-flex items-center">
+                    <a href="{{ route('users') }}" wire:navigate
+                        class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="true" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="me-1 size-4 fill-gray-600">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                        Users
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="mx-1 h-3 w-3 text-gray-400 rtl:rotate-180" aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="m1 9 4-4-4-4" />
+                        </svg>
+                        <a href="{{ route('create.user') }}" wire:navigate
+                            class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Edit
+                            users</a>
+                    </div>
+                </li>
+
+            </ol>
+        </nav>
+    </x-slot>
+    <div class="min-h-screen/80 mx-auto flex w-full flex-col items-center justify-center" x-data="{
+        role: '{{ $role }}',
+        isTeacher: '{{ $role }}' === 'teacher',
+        isStudent: '{{ $role }}' === 'student'
+    }">
+        <form wire:submit.prevent="editUser" class="w-full max-w-xl">
             <div class="mb-4">
                 <label for="name" class="mb-1 font-header">Nama Lengkap</label>
                 <input type="text" wire:model="name" placeholder="Isian berupa nama lengkap beserta gelar"
@@ -120,26 +168,12 @@ new class extends Component {
                         {{ $message }}</p>
                 @enderror
             </div>
+
             <div class="mb-4">
-                <label for="password" class="mb-1 font-header">Password</label>
-                <input type="password" wire:model="password" placeholder="*********"
-                    class="block w-full rounded-lg border-gray-300" />
-                @error('password')
-                    <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
-                        {{ $message }}</p>
-                @enderror
-            </div>
-            <div class="mb-4">
-                <label for="role" class="mb-1 font-header">Pilih
+                <label for="role" class="mb-1 font-header">
                     Peran</label>
-                <select name="role" x-model="role" wire:model="role"
-                    @change="isTeacher = role === 'teacher'; isStudent = role === 'student';" id="role"
-                    class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500">
-                    <option selected>Pilih role user</option>
-                    @foreach ($roles as $role)
-                        <option value="{{ $role->name }}">{{ $role->name }}</option>
-                    @endforeach
-                </select>
+                <input type="text" class="block w-full rounded-lg border-gray-300" value="{{ $role }}"
+                    readonly disabled>
             </div>
             <div x-show="isTeacher" x-transition.duration.500ms>
                 <div class="mb-4">
@@ -209,7 +243,7 @@ new class extends Component {
 
             <div class="flex w-full justify-center">
 
-                <x-primary-button type="submit" color="blue">Buat Pengguna</x-primary-button>
+                <x-primary-button type="submit" color="blue">Edit Pengguna</x-primary-button>
             </div>
         </form>
     </div>

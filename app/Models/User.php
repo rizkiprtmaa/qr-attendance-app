@@ -5,7 +5,9 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Student;
 use App\Models\Teacher;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -57,5 +59,30 @@ class User extends Authenticatable
     public function student()
     {
         return $this->hasOne(Student::class);
+    }
+
+    public function generateQrToken()
+    {
+        // Generate token unik jika belum ada
+        if (!$this->qr_token) {
+            $this->qr_token = Str::uuid();
+            $this->save();
+        }
+        return $this->qr_token;
+    }
+
+    // Method untuk regenerate token jika diperlukan
+    public function refreshQrToken()
+    {
+        $this->qr_token = Str::uuid();
+        $this->save();
+        return $this->qr_token;
+    }
+
+    public function getQrCodeUrlAttribute()
+    {
+        return $this->qr_code_path
+            ? Storage::url($this->qr_code_path)
+            : null;
     }
 }

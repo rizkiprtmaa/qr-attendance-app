@@ -21,20 +21,17 @@
 </head>
 
 <body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
+    <div class="flex min-h-screen bg-gray-100">
         <livewire:layout.navigation />
 
-        <!-- Page Heading -->
-        @if (isset($header))
-            <header class="bg-white shadow">
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
-        @endif
-
-        <!-- Page Content -->
-        <main>
+        <main class="flex-1 p-6 md:ml-64">
+            @if (isset($header))
+                <header class="">
+                    <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endif
             {{ $slot }}
         </main>
     </div>

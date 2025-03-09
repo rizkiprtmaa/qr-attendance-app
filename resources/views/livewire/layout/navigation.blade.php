@@ -1,135 +1,112 @@
 <?php
-
+// navigation.blade.php (Livewire Component)
 use App\Livewire\Actions\Logout;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    /**
-     * Log the current user out of the application.
-     */
     public function logout(Logout $logout): void
     {
         $logout();
-
         $this->redirect('/', navigate: true);
     }
 }; ?>
 
-<nav x-data="{ open: false }" class="border-b border-gray-100 bg-white">
-    <!-- Primary Navigation Menu -->
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 justify-between">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="flex shrink-0 items-center">
-                    <a href="{{ route('dashboard') }}" wire:navigate>
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
-                </div>
+<div x-data="{ open: false }"
+    class="fixed inset-y-0 left-0 z-50 w-64 transform font-inter text-white transition duration-300 ease-in-out md:translate-x-0">
+    <!-- Sidebar -->
+    <div :class="{ '-translate-x-full': !open, 'translate-x-0': open }"
+        class="fixed inset-y-0 left-0 z-50 min-h-screen w-64 transform rounded-r-3xl bg-white text-slate-900 transition duration-300 ease-in-out md:static md:block md:translate-x-0">
+        <div class="flex items-center justify-between p-4">
+            <a href="{{ route('dashboard') }}" wire:navigate class="mt-5 flex items-center">
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    @role('admin')
-                        <x-nav-link :href="route('users')" :active="request()->routeIs('users')" wire:navigate>
-                            {{ __('Users') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('classes')" :active="request()->routeIs('classes')" wire:navigate>
-                            {{ __('Classes') }}
-                        </x-nav-link>
-                    @endrole
-                </div>
+                <span class="ml-4 text-lg font-medium">SMK Nurussalam</span>
+            </a>
+
+            <!-- Close button for mobile -->
+            <button @click="open = false" class="text-white focus:outline-none md:hidden">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="mt-5">
+            <div class="px-4">
+                <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="mr-3 h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                    </svg>
+
+                    {{ __('Dashboard') }}
+                </x-sidebar-link>
+
+                @role('admin')
+                    <x-sidebar-link :href="route('users')" :active="request()->routeIs(['users', 'teachers', 'create.user'])" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+
+                        {{ __('Users') }}
+                    </x-sidebar-link>
+
+                    <x-sidebar-link :href="route('classes')" :active="request()->routeIs(['classes', 'classes.detail'])" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                        </svg>
+
+                        {{ __('Classes') }}
+                    </x-sidebar-link>
+
+                    <x-sidebar-link :href="route('settings')" :active="request()->routeIs('settings')" wire:navigate>
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {{ __('Settings') }}
+                    </x-sidebar-link>
+                @endrole
             </div>
+        </nav>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:ms-6 sm:flex sm:items-center">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button
-                            class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none">
-                            <div x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name"
-                                x-on:profile-updated.window="name = $event.detail.name"></div>
-
-                            <div class="ms-1">
-                                <svg class="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile')" wire:navigate>
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <button wire:click="logout" class="w-full text-start">
-                            <x-dropdown-link>
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </button>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open"
-                    class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{ 'hidden': open, 'inline-flex': !open }" class="inline-flex"
-                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{ 'hidden': !open, 'inline-flex': open }" class="hidden" stroke-linecap="round"
-                            stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <!-- User Profile Section -->
+        <div class="absolute bottom-0 w-full p-4">
+            <div class="flex items-center">
+                <img src="{{ auth()->user()->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
+                    alt="{{ auth()->user()->name }}" class="mr-3 h-10 w-10 rounded-full">
+                <div>
+                    <p class="text-inter text-sm font-medium">{{ auth()->user()->name }}</p>
+                    <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                </div>
+                <button wire:click="logout" class="ml-auto text-slate-900 hover:text-slate-600">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-liejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{ 'block': open, 'hidden': !open }" class="hidden sm:hidden">
-        <div class="space-y-1 pb-3 pt-2">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            @role('admin')
-                <x-responsive-nav-link :href="route('users')" :active="request()->routeIs('users')" wire:navigate>
-                    {{ __('Users') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('classes')" :active="request()->routeIs('classes')" wire:navigate>
-                    {{ __('Classes') }}
-                </x-responsive-nav-link>
-            @endrole
-        </div>
+    <!-- Mobile Menu Toggle -->
+    <button @click="open = !open" class="fixed left-4 top-4 z-50 text-gray-800 focus:outline-none md:hidden">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path :class="{ 'hidden': open, 'block': !open }" class="block" stroke-linecap="round"
+                stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            <path :class="{ 'block': open, 'hidden': !open }" class="hidden" stroke-linecap="round"
+                stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
 
-        <!-- Responsive Settings Options -->
-        <div class="border-t border-gray-200 pb-1 pt-4">
-            <div class="px-4">
-                <div class="text-base font-medium text-gray-800" x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name"
-                    x-on:profile-updated.window="name = $event.detail.name"></div>
-                <div class="text-sm font-medium text-gray-500">{{ auth()->user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile')" wire:navigate>
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <button wire:click="logout" class="w-full text-start">
-                    <x-responsive-nav-link>
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </button>
-            </div>
-        </div>
+    <!-- Main Content Area -->
+    <div class="flex-1 bg-gray-100 transition-all duration-300 ease-in-out md:ml-64">
+        @yield('content')
     </div>
-</nav>
+</div>

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="text-2xl font-semibold leading-tight text-gray-800">
-            {{ __('Buat Pengguna') }}
+            {{ __('Edit Pengguna') }}
         </h2>
         <nav class="mt-2.5 flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
@@ -24,8 +24,8 @@
                                 d="m1 9 4-4-4-4" />
                         </svg>
                         <a href="{{ route('create.user') }}" wire:navigate
-                            class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Create
-                            Users</a>
+                            class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Edit
+                            users</a>
                     </div>
                 </li>
 
@@ -35,7 +35,7 @@
 
     <div class="py-12">
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <livewire:admin.create-user />
+            <livewire:admin.edit-user />
         </div>
     </div>
 </x-app-layout>

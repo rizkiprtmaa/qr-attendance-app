@@ -15,15 +15,20 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $studentRole = Role::firstOrCreate(['name' => 'student']);
+        $admin = User::factory()->create([
+            'name' => 'Admin',
+            'email' => 'admin@mail',
+            'password' => bcrypt('password'),
+        ]);
 
-        $studentUsers = User::factory(10)->create();
-        foreach ($studentUsers as $studentUser) {
-            $studentUser->assignRole($studentRole);
+        $admin->assignRole('admin');
 
-            Student::factory()->create([
-                'user_id' => $studentUser->id,
-            ]);
-        }
+        $admin = User::factory()->create([
+            'name' => 'Teacher',
+            'email' => 'teacher@example',
+            'password' => bcrypt('password'),
+        ]);
+
+        $admin->assignRole('teacher');
     }
 }
