@@ -48,7 +48,7 @@
             </li>
             <li class="me-2">
                 <a href="#"
-                    class="active inline-block rounded-t-lg border-b-2 border-blue-500 border-transparent p-4 text-blue-600"
+                    class="active inline-block rounded-t-lg border-b-2 border-blue-600 border-transparent p-4 text-blue-600"
                     aria-current="page">Guru</a>
             </li>
             <li class="me-2">

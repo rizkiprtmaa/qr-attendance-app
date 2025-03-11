@@ -37,7 +37,7 @@
         <ul class="-mb-px flex flex-wrap">
             <li class="me-2">
                 <a href="{{ route('users') }}"
-                    class="active border-blue-5z00 inline-block rounded-t-lg border-b-2 border-transparent p-4 text-blue-600">Overview</a>
+                    class="active inline-block rounded-t-lg border-b-2 border-blue-600 border-transparent p-4 text-blue-600">Overview</a>
             </li>
             <li class="me-2">
                 <a href="{{ route('teachers') }}" wire:navigate

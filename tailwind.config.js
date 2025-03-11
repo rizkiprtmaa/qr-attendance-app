@@ -20,4 +20,9 @@ export default {
     },
 
     plugins: [forms],
+    build: {
+        rollupOptions: {
+            external: ["html5-qrcode"],
+        },
+    },
 };

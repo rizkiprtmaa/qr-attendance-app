@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\User;
 use Livewire\Volt\Volt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AttendanceController;
 
 
 Route::view('/', 'welcome');
@@ -44,10 +47,10 @@ Route::view('classes-detail/{id}', 'admin.classes.show')
 
 Volt::route('classes/{major}/edit', 'admin.edit-major')->middleware(['auth', 'verified', 'role:admin'])->name('edit.major');
 
-Route::get('/attendance/scan/{qr_token}', [
-    'as' => 'attendance.scan',
-    'uses' => 'App\Http\Controllers\AttendanceController@scanQr'
-])->middleware('web');
+
+Route::get('/attendance/scan', function () {
+    return view('admin.attendances.qr-scanner');
+})->middleware(['auth', 'verified', 'role:admin'])->name('attendance.scan');
 
 Route::get('/users/{user}/download-qr', [
     'as' => 'user.download.qr',
@@ -61,6 +64,8 @@ Route::get('/users/{user}/download-qr', [
         return response()->download(storage_path('app/public/' . $user->qr_code_path));
     }
 ])->middleware('auth');
+
+Route::view('attendances', 'admin.attendances.index')->middleware(['auth', 'verified', 'role:admin'])->name('qr.attendances');
 
 
 require __DIR__ . '/auth.php';

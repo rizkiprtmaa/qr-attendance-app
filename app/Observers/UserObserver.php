@@ -4,7 +4,8 @@ namespace App\Observers;
 
 use App\Models\User;
 use Illuminate\Support\Str;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 
 class UserObserver
@@ -16,14 +17,18 @@ class UserObserver
         $user->qr_token = $qrToken;
 
         // Generate QR Image
-        $qrCode = QrCode::size(300)
-            ->generate(route('attendance.scan', $qrToken));
+        $qrCode = QrCode::create($qrToken)
+            ->setSize(300)
+            ->setMargin(10);
 
-        // Simpan QR Image
-        $filename = "qr_codes/user_{$user->id}_qr.svg";
-        Storage::disk('public')->put($filename, $qrCode);
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
 
-        // Simpan path QR ke user
+        // Simpan QR Code
+        $filename = "qr_codes/{$user->name}_qr_presensi.png";
+        Storage::disk('public')->put($filename, $result->getString());
+
+        // Update path QR Code
         $user->qr_code_path = $filename;
         $user->save();
     }

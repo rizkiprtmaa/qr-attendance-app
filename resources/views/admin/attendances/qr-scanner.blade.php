@@ -15,6 +15,9 @@
         href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
         rel="stylesheet">
 
+    <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/ripple.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@material-tailwind/html@latest/styles/material-tailwind.css"/>
+
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -22,20 +25,11 @@
     @livewireStyles
 </head>
 
-<body class="font-sans antialiased">
-    <div class="flex min-h-screen bg-gray-100">
-        <livewire:layout.navigation />
+<body class="font-inter antialiased">
+    <div class="flex min-h-screen items-center justify-center bg-gray-100">
 
-        <main class="flex-1 p-6 md:ml-64">
-            @if (isset($header))
-                <header class="">
-                    <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endif
-            {{ $slot }}
-        </main>
+        <livewire:admin.attendance-qr-scanner />
+
     </div>
 </body>
 @livewireScripts

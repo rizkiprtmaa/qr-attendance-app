@@ -239,7 +239,8 @@ new class extends Component {
                 class="border-outline bg-surface-alt/60 dark:border-outline-dark dark:bg-surface-dark/20 flex flex-col-reverse justify-between gap-2 border-t p-4 sm:flex-row sm:items-center md:justify-end">
                 <button x-on:click="showMajorModal = false" type="button"
                     class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
-                <x-primary-button type="submit" color="blue">Buat Jurusan</x-primary-button>
+                <x-primary-button type="submit" color="blue" x-on:click="showMajorModal = false">Buat
+                    Jurusan</x-primary-button>
                 </form>
             </div>
         </div>

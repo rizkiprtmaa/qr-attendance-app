@@ -3,8 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\Attendance;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\Storage;
@@ -84,5 +86,16 @@ class User extends Authenticatable
         return $this->qr_code_path
             ? Storage::url($this->qr_code_path)
             : null;
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    // Dalam model User
+    public function getQrScanUrl()
+    {
+        return route('attendance.scan', ['token' => $this->qr_token]);
     }
 }

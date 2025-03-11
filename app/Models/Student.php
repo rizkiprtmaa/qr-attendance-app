@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Testing\Fluent\Concerns\Has;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Major;
+use App\Models\Classes;
 
 class Student extends Model
 {
@@ -21,5 +23,10 @@ class Student extends Model
     public function classes()
     {
         return $this->belongsTo(Classes::class);
+    }
+
+    public function major()
+    {
+        return $this->belongsTo(Major::class);
     }
 }
