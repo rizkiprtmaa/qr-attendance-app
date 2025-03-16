@@ -67,5 +67,9 @@ Route::get('/users/{user}/download-qr', [
 
 Route::view('attendances', 'admin.attendances.index')->middleware(['auth', 'verified', 'role:admin'])->name('qr.attendances');
 
+Route::view('arrival-scanner', 'admin.attendances.arrival-scanner')->middleware(['auth', 'verified', 'role:admin'])->name('arrival.scanner');
+
+Volt::route('users/{user}/detail', 'user.user-detail')->middleware(['auth', 'verified', 'role:admin|teacher'])->name('user.detail');
+
 
 require __DIR__ . '/auth.php';

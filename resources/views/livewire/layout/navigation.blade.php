@@ -14,7 +14,7 @@ new class extends Component {
 <div x-data="{ open: false }"
     class="fixed inset-y-0 left-0 z-50 w-64 transform font-inter text-white transition duration-300 ease-in-out md:translate-x-0">
     <!-- Sidebar -->
-    <div :class="{ '-translate-x-full': !open, 'translate-x-0': open }"
+    <div x-cloak :class="{ '-translate-x-full': !open, 'translate-x-0': open }"
         class="fixed inset-y-0 left-0 z-50 min-h-screen w-64 transform rounded-r-3xl bg-white text-slate-900 transition duration-300 ease-in-out md:static md:block md:translate-x-0">
         <div class="flex items-center justify-between p-4">
             <a href="{{ route('dashboard') }}" wire:navigate class="mt-5 flex items-center">

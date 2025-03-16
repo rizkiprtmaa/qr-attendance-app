@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light!">
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Laravel') }}</title>
@@ -18,25 +19,33 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+
+    <script type="module" src="https://unpkg.com/cally"></script>
+
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
     @livewireStyles
+    @fluxAppearance
 </head>
 
-<body class="font-sans antialiased">
+<body class="my-0 font-sans antialiased" style="margin-bottom: none!important">
     <div class="flex min-h-screen bg-gray-100">
         <livewire:layout.navigation />
 
-        <main class="flex-1 p-6 md:ml-64">
+        <main class="flex-1 p-4 transition-all duration-300 ease-in-out md:ml-64">
             @if (isset($header))
-                <header class="">
+                <header class="mt-10 w-full md:mt-0">
                     <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
                 </header>
             @endif
-            {{ $slot }}
+            <div class="w-full">
+                {{ $slot }}
+            </div>
         </main>
     </div>
+    @fluxScripts
 </body>
 @livewireScripts
 

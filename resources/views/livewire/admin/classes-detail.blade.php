@@ -106,13 +106,8 @@ new class extends Component {
 
     <div class="flex items-center justify-between">
         <div class="relative mb-2 flex w-full max-w-xs">
-            <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari siswa..."
-                class="block w-full rounded-lg border-gray-300 pl-10 text-sm focus:border-slate-900 focus:ring focus:ring-slate-300 focus:ring-opacity-50" />
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 transform text-gray-500">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
+            <flux:input kbd="⌘K" icon="magnifying-glass" placeholder="Search..."
+                wire:model.live.debounce.300ms="search" />
         </div>
     </div>
 
@@ -169,22 +164,18 @@ new class extends Component {
                             12
                         </td>
                         <td class="flex items-center gap-4 px-6 py-4 text-right">
-                            <a href="#" class="me-1 font-medium text-green-600 hover:underline"><svg
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                </svg>
-                            </a>
-                            <button class="font-medium text-slate-900"
-                                x-on:click="$wire.delete('{{ $student->id }}')"><svg
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                                </svg>
+                            <flux:button class="bg-zinc-800! hover:bg-zinc-700!">Unduh Presensi</flux:button>
 
-                            </button>
+                            <flux:dropdown class="gap-4">
+                                <flux:button icon-trailing="chevron-down">Opsi</flux:button>
+
+                                <flux:menu>
+                                    <flux:menu.item icon="eye">Lihat</flux:menu.item>
+                                    <flux:menu.item icon="pencil">Edit</flux:menu.item>
+                                    <flux:menu.item class="text-red-500" variant="danger" icon="trash">Delete
+                                    </flux:menu.item>
+                                </flux:menu>
+                            </flux:dropdown>
                         </td>
                     </tr>
                 @endforeach

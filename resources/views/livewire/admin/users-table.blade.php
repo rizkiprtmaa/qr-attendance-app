@@ -139,11 +139,13 @@ new class extends Component {
     </div>
 
 
-    <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
+    <div
+        class="relative max-w-[28rem] overflow-x-auto whitespace-nowrap shadow-md sm:rounded-lg md:max-w-full md:overflow-x-auto">
+        <table class="w-full overflow-scroll text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
             <thead class="bg-blue-500 text-xs uppercase text-white">
                 <tr>
-                    <th scope="col" class="px-6 py-3" wire:click="setSortBy('name')">
+                    <th scope="col" class="flex flex-row items-center gap-2 px-6 py-3"
+                        wire:click="setSortBy('name')">
                         Nama
                     </th>
                     <th scope="col" class="px-6 py-3" wire:click="setSortBy('email')">
@@ -155,7 +157,7 @@ new class extends Component {
                     <th scope="col" class="px-6 py-3" wire:click="setSortBy('roles.name')">
                         Peran
                     </th>
-                    <th scope="col" class="px-6 py-3">
+                    <th scope="col" class="flex flex-row items-center justify-center px-6 py-3">
                         Aksi
                     </th>
                 </tr>
@@ -165,8 +167,9 @@ new class extends Component {
                     <tr wire:key="user-{{ $user->id }}"
                         class="border-b border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600">
                         <th scope="row"
-                            class="whitespace-nowrap px-6 py-4 font-medium text-gray-900 dark:text-white">
-                            {{ $user->name }}
+                            class="whitespace-nowrap px-6 py-4 font-medium text-gray-900 dark:text-white"> <a
+                                href="{{ route('user.detail', $user) }}" wire:navigate>
+                                {{ $user->name }}</a>
                         </th>
                         <td class="px-6 py-4">
                             {{ $user->email }}
@@ -174,44 +177,37 @@ new class extends Component {
                         <td class="px-6 py-4">
                             Active
                         </td>
-                        <td class="px-6 py-4">
-                            {{ $user->roles->first()->name }}
-                        </td>
-                        <td class="flex items-center gap-4 px-6 py-4">
+                        @if ($user->roles->contains('name', 'student'))
+                            <td class="px-6 py-4">
+                                Siswa
+                            </td>
+                        @else
+                            <td class="px-6 py-4">
+                                Guru
+                            </td>
+                        @endif
+                        <td class="flex flex-row items-center justify-center gap-4 px-6 py-4">
 
-                            <button title="Hapus" class="font-medium text-red-600 hover:underline"
-                                @click="OpenDeleteModal({{ $user->id }}, '{{ $user->name }}')"><svg
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                </svg>
-                            </button>
-                            <a href="{{ route('user.edit', $user->id) }}"
-                                class="font-medium text-blue-600 hover:underline"><svg
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-5 text-green-500">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                </svg>
-                            </a>
-                            <button class="font-medium text-blue-600 hover:underline"
-                                @click="openQrModal('{{ $user->qr_code_path }}', '{{ $user->id }}')"><svg
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
-                                </svg>
-                            </button>
 
+                            <flux:tooltip content="Hapus">
+                                <flux:button icon="trash" icon-variant="outline" variant="danger"
+                                    @click="OpenDeleteModal({{ $user->id }}, '{{ $user->name }}')" />
+                            </flux:tooltip>
+                            <flux:tooltip content="Edit">
+                                <flux:button icon="pencil-square" icon-variant="outline"
+                                    href="{{ route('user.edit', $user->id) }}" wire:navigate />
+                            </flux:tooltip>
+                            <flux:tooltip variant="primary" content="Lihat QR">
+                                <flux:button icon="qr-code" icon-variant="outline"
+                                    @click="openQrModal('{{ $user->qr_code_path }}', '{{ $user->id }}')" />
+                            </flux:tooltip>
                         </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
+
     <div class="mt-5">
         <div class="flex items-center gap-4">
             <select wire:model.live="perPage" class="rounded-lg border-gray-300 text-sm">
@@ -253,24 +249,20 @@ new class extends Component {
         </div>
     </div>
 
-    {{-- Modal Delete --}}
-    {{-- <!-- Background overlay -->
-    <div x-show="showDeleteModal" class="fixed inset-0 z-50 transition-opacity" aria-hidden="true"
-        @click="showDeleteModal = false">
-        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-    </div> --}}
+
 
     <!-- Modal -->
-    <div x-show="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75" x-cloak>
+    <div x-show="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-75"
+        x-cloak>
         <div x-show="showDeleteModal" x-transition:enter="transition ease-out duration-300 transform"
             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
             x-transition:leave="transition ease-in duration-200 transform"
             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
-            <div class="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div class="flex items-center justify-center px-4 text-center sm:block sm:p-0">
                 <!-- Modal panel -->
-                <div class="inline-block w-full transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle"
+                <div class="inline-block w-full transform items-center overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle"
                     role="dialog" aria-modal="true" aria-labelledby="modal-headline">
                     <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                         <!-- Modal content -->
@@ -278,10 +270,9 @@ new class extends Component {
                             <div
                                 class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <!-- Heroicon name: outline/exclamation -->
-                                <svg width="64px" height="64px" class="h-6 w-6 text-red-600"
-                                    stroke="currentColor" fill="none" viewBox="0 0 24.00 24.00"
-                                    xmlns="http://www.w3.org/2000/svg" stroke="#ef4444"
-                                    stroke-width="0.45600000000000007">
+                                <svg width="64px" height="64px" class="h-6 w-6 text-red-600" stroke="currentColor"
+                                    fill="none" viewBox="0 0 24.00 24.00" xmlns="http://www.w3.org/2000/svg"
+                                    stroke="#ef4444" stroke-width="0.45600000000000007">
                                     <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
                                     <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
                                     <g id="SVGRepo_iconCarrier">

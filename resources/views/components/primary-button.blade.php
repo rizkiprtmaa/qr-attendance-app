@@ -16,7 +16,7 @@
 @endphp
 
 <button type="{{ $type }}" @if ($action) @click="{{ $action }}" @endif
-    class="{{ $colorClasses }} flex flex-row gap-1 rounded-xl border px-6 py-2 text-center shadow-[inset_0_2px_0px_0px_rgba(255,255,255,0.25),0_2px_4px_0px_rgba(22,123,223,0.5)] transition duration-300 ease-in-out hover:opacity-90 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+    class="{{ $colorClasses }} flex flex-row gap-1 rounded-xl border px-3 py-1 text-center shadow-[inset_0_2px_0px_0px_rgba(255,255,255,0.25),0_2px_4px_0px_rgba(22,123,223,0.5)] transition duration-300 ease-in-out hover:opacity-90 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:py-2"
     {{ $attributes }}>
     {{ $slot }}
 

@@ -18,6 +18,12 @@ new class extends Component {
         $this->reset('scan_message', 'scan_status', 'last_scanned_token');
     }
 
+    public function resetMessage()
+    {
+        $this->scan_message = '';
+        $this->scan_status = 'idle';
+    }
+
     public function processScan($token)
     {
         // Validasi token
@@ -45,12 +51,14 @@ new class extends Component {
         } catch (\Exception $e) {
             $this->scan_message = 'Terjadi kesalahan saat mencatat presensi: ' . $e->getMessage();
             $this->scan_status = 'error';
-
             return;
         }
+
+        // Dispatch event untuk update tabel
         $this->dispatch('scan-attendance');
     }
 
+    #[On('scan-attendance')]
     public function render(): mixed
     {
         return view('livewire.admin.attendance-qr-scanner');
@@ -79,16 +87,18 @@ new class extends Component {
 
 
 
-
-
             {{-- Pesan Hasil Scan --}}
             @if ($scan_message)
-                <div
-                    class="{{ $scan_status == 'error'
-                        ? 'bg-red-100 text-red-800'
-                        : ($scan_status == 'success'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800') }} mb-4 rounded p-4 text-center">
+                <div wire:key="{{ now() }}" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => { show = false; }, 3000)"
+                    class="fixed bottom-4 right-4 z-50 rounded p-4 text-center shadow-lg transition-transform"
+                    :class="{
+                        'bg-red-100 text-red-800': '{{ $scan_status }}'
+                        === 'error',
+                        'bg-green-100 text-green-800': '{{ $scan_status }}'
+                        === 'success',
+                        'bg-yellow-100 text-yellow-800': '{{ $scan_status }}'
+                        === 'idle'
+                    }">
                     {{ $scan_message }}
                 </div>
             @endif
@@ -102,7 +112,7 @@ new class extends Component {
             </div>
 
             {{-- Kontainer Scanner --}}
-            <div x-show="isScanning" x-transition class="flex min-h-max flex-col gap-5">
+            <div x-show="isScanning" x-transition class="relative flex min-h-max w-full max-w-[450px] flex-col gap-5">
                 <div id="reader" class="mb-4 h-72 w-full bg-gray-100"></div>
 
                 <div class="mt-5 flex space-x-4">
@@ -121,6 +131,7 @@ new class extends Component {
             @endif
         </div>
     </div>
+
 
     <script>
         function qrScanner() {
@@ -172,13 +183,17 @@ new class extends Component {
 
                             Html5Qrcode.getCameras().then(devices => {
                                 if (devices && devices.length) {
-                                    const cameraId = devices[1].id; // Pilih kamera pertama
+                                    // Gunakan kamera yang tersimpan sebelumnya atau kamera pertama
+                                    const cameraId = this.lastCameraId ||
+                                        (devices.length > 1 ? devices[1].id : devices[0].id);
+
+                                    this.lastCameraId = cameraId; // Simpan untuk penggunaan berikutnya
                                     this.debugMessage = `Menggunakan kamera: ${cameraId}`;
 
                                     // Mulai scanner dengan kamera yang dipilih
                                     this.scanner.start(
                                         cameraId, {
-                                            fps: 5, // Mengurangi fps untuk kinerja yang lebih baik
+                                            fps: 5,
                                             qrbox: 250,
                                             aspectRatio: 1.333
                                         },
@@ -188,27 +203,30 @@ new class extends Component {
 
                                             // Kirim token ke backend
                                             if (decodedText) {
-                                                Livewire.dispatch('process-scan', {
-                                                    token: decodedText
+                                                // Stop scanner sepenuhnya
+                                                this.scanner.stop().then(() => {
+                                                    // Kirim data ke Livewire
+                                                    Livewire.dispatch('process-scan', {
+                                                        token: decodedText
+                                                    });
+
+                                                    // Restart scanner setelah beberapa detik
+                                                    setTimeout(() => {
+                                                        this.startScanning();
+                                                    }, 1000);
+                                                }).catch(err => {
+                                                    console.error('Error stopping scanner:',
+                                                        err);
+                                                    // Coba restart scanner meski ada error
+                                                    setTimeout(() => {
+                                                        this.startScanning();
+                                                    }, 2000);
                                                 });
-
-                                                this.scanner.pause();
-
-                                                // Lanjutkan scanning
-                                                setTimeout(() => {
-
-
-                                                    this.startScanning();
-
-                                                }, 2000);
-
                                             }
                                         },
                                         (errorMessage) => {
-
-
-                                            // Jangan lanjutkan jika terjadi error, hanya tampilkan pesan
-                                            this.debugMessage = `Error: ${errorMessage}`;
+                                            // Hanya log error
+                                            // console.error(`QR Error: ${errorMessage}`);
                                         }
                                     );
                                 } else {
@@ -236,6 +254,7 @@ new class extends Component {
             };
         }
     </script>
+
 
 
 </div>
