@@ -21,7 +21,7 @@ new class extends Component {
     public function changeScanType($type)
     {
         $this->scan_type = $type;
-        $this->reset('scan_message', 'scan_status', 'last_scanned_token', 'scanned_user', 'show_confirmation');
+        $this->reset('scan_message', 'scan_status', 'scanned_user', 'show_confirmation');
     }
 
     public function resetMessage()
@@ -77,7 +77,7 @@ new class extends Component {
             // Persiapkan pesan konfirmasi dengan detail status
             $statusMessage = match ($status) {
                 'terlambat' => 'Anda terlambat',
-                'pulang_cepat' => 'Anda pulang sebelum waktu normal',
+                'pulang_cepat' => 'Anda pulang lebih cepat',
                 default => 'Presensi dalam waktu normal',
             };
 
@@ -140,21 +140,40 @@ new class extends Component {
 ?>
 
 <div x-data="qrScanner()" x-init="initializeLibrary()" class="flex min-h-[80vh] flex-col items-center justify-center">
-    <div class="min-w-[450px] overflow-hidden rounded-xl bg-white shadow-md">
-        <div class="p-8">
-            <h2 class="mb-4 text-center text-2xl font-bold">Presensi QR</h2>
 
-            {{-- Tombol Pilih Tipe Scan --}}
-            <div class="mb-6 flex justify-center space-x-6">
-                <button wire:click="changeScanType('datang')"
-                    class="{{ $scan_type == 'datang' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-gray-800 border-2 border-gray-300 hover:bg-blue-100 hover:border-blue-500 hover:text-blue-600' }} rounded-full px-6 py-3 text-lg font-medium transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Scan Datang
-                </button>
-                <button wire:click="changeScanType('pulang')"
-                    class="{{ $scan_type == 'pulang' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-gray-800 border-2 border-gray-300 hover:bg-blue-100 hover:border-blue-500 hover:text-blue-600' }} rounded-full px-6 py-3 text-lg font-medium transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Scan Pulang
-                </button>
-            </div>
+
+    <div class="flex justify-center">
+        <nav
+            class="flex items-center space-x-1 overflow-x-auto rounded-xl bg-gray-500/5 p-1 text-sm text-gray-600 dark:bg-gray-500/20 rtl:space-x-reverse">
+            <button role="tab" type="button" wire:click="changeScanType('datang')"
+                @click="stopScanning(); startScanning()"
+                class="{{ $scan_type == 'datang' ? 'bg-white text-blue-600 shadow outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-blue-600 dark:text-white' : 'bg-gray-200 text-gray-600 hover:bg-blue-100 hover:text-blue-600' }} flex h-8 items-center whitespace-nowrap rounded-lg px-5 font-medium transition-all duration-300 ease-in-out"
+                aria-selected="{{ $scan_type == 'datang' }}">
+                Datang
+            </button>
+
+            <button role="tab" type="button" wire:click="changeScanType('pulang')"
+                @click="stopScanning(); startScanning()"
+                class="{{ $scan_type == 'pulang' ? 'bg-white text-blue-600 shadow outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-blue-600 dark:text-white' : 'bg-gray-200 text-gray-600 hover:bg-blue-100 hover:text-blue-600' }} flex h-8 items-center whitespace-nowrap rounded-lg px-5 font-medium transition-all duration-300 ease-in-out"
+                aria-selected="{{ $scan_type == 'pulang' }}">
+                Pulang
+            </button>
+        </nav>
+    </div>
+
+    <div class="min-w-[450px] overflow-hidden">
+        <div class="p-8">
+            @if ($scan_type == 'datang')
+                <h2 class="mb-4 text-center font-inter text-2xl font-medium" x-show="{{ $scan_type == 'datang' }}">
+                    Presensi Datang
+                </h2>
+            @else
+                <h2 class="mb-4 text-center font-inter text-2xl font-medium" x-show="{{ $scan_type == 'pulang' }}">
+                    Presensi Pulang
+                </h2>
+            @endif
+
+
 
             {{-- Modal Konfirmasi --}}
             @if ($show_confirmation && $scanned_user)
@@ -203,21 +222,23 @@ new class extends Component {
             {{-- Area Scanner --}}
             <div x-show="!isScanning">
                 <button @click="startScanning()"
-                    class="w-full rounded-lg bg-green-500 py-3 text-white transition hover:bg-green-600">
-                    Buka Scanner
+                    class="w-full rounded-[10px] bg-blue-600 py-2 text-sm text-white transition hover:bg-blue-700">
+                    Buka Scanner QR
                 </button>
             </div>
 
             {{-- Kontainer Scanner --}}
-            <div x-show="isScanning" x-transition class="relative flex min-h-max w-full max-w-[450px] flex-col gap-5">
-                <div id="reader" class="mb-4 h-72 w-full bg-gray-100"></div>
+            <div x-cloak x-show="isScanning" x-transition
+                class="relative flex min-h-max w-full max-w-[450px] flex-col gap-5 overflow-hidden">
 
-                <div class="mt-5 flex space-x-4">
-                    <button @click="stopScanning()"
-                        class="flex-1 rounded-lg bg-red-500 py-2 text-white transition hover:bg-red-600">
-                        Tutup Scanner
-                    </button>
-                </div>
+                <div id="reader" class="mb-4 h-72 w-full bg-gray-100 object-contain"></div>
+            </div>
+
+            <div x-cloak x-show="isScanning" class="mt-3 flex space-x-4">
+                <button @click="stopScanning()"
+                    class="flex-1 rounded-[10px] bg-gray-600 py-2 text-sm text-white transition hover:bg-gray-700">
+                    Tutup Scanner QR
+                </button>
             </div>
 
 
@@ -280,11 +301,25 @@ new class extends Component {
                                         this.lastCameraId = cameraId; // Simpan untuk penggunaan berikutnya
                                         this.debugMessage = `Menggunakan kamera: ${cameraId}`;
 
+                                        // Fungsi untuk menghitung qrbox yang responsif
+                                        const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
+                                            // Tentukan ukuran maksimum kotak QR
+                                            const minDimension = Math.min(viewfinderWidth,
+                                                viewfinderHeight);
+                                            const qrboxSize = Math.floor(minDimension *
+                                                0.7); // 70% dari dimensi terkecil
+
+                                            return {
+                                                width: qrboxSize,
+                                                height: qrboxSize
+                                            };
+                                        };
+
                                         // Mulai scanner dengan kamera yang dipilih
                                         this.scanner.start(
                                             cameraId, {
                                                 fps: 5,
-                                                qrbox: 250,
+                                                qrbox: qrboxFunction,
                                                 aspectRatio: 1.333
                                             },
                                             (decodedText) => {

@@ -16,13 +16,31 @@
         rel="stylesheet">
 
     <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/ripple.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@material-tailwind/html@latest/styles/material-tailwind.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/@material-tailwind/html@latest/styles/material-tailwind.css" />
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     @livewireStyles
+
+    <style>
+        #reader {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #reader video {
+            max-width: 100% !important;
+            height: auto !important;
+            object-fit: contain !important;
+        }
+    </style>
 </head>
 
 <body class="font-inter antialiased">

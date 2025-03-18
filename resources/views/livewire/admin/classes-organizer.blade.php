@@ -190,28 +190,28 @@ new class extends Component {
         @endforeach
     </div>
 
+
     {{-- Modals Jurusan --}}
     <div x-cloak x-show="showMajorModal" x-transition.opacity.duration.200ms x-trap.inert.noscroll="showMajorModal"
         x-on:keydown.esc.window="showMajorModal = false" x-on:click.self="showMajorModal = false"
-        class="fixed inset-0 z-30 flex w-full items-center justify-center bg-black/20 p-4 pb-8 lg:p-8" role="dialog"
+        class="fixed inset-0 z-50 flex w-full items-center justify-center bg-black/20 p-4 pb-8 lg:p-8" role="dialog"
         aria-modal="true" aria-labelledby="defaultModalTitle">
         <!-- Modal Dialog -->
         <div x-show="showMajorModal"
             x-transition:enter="transition ease-out duration-200 delay-100 motion-reduce:transition-opacity"
             x-transition:enter-start="opacity-0 scale-50" x-transition:enter-end="opacity-100 scale-100"
-            class="rounded-radius border-gray text-on-surface flex w-full max-w-2xl flex-col gap-4 overflow-hidden rounded-xl border bg-white px-8 py-6 backdrop-blur-lg backdrop-filter">
+            class="rounded-radius border-gray text-on-surface relative z-50 flex w-full max-w-2xl flex-col gap-4 overflow-hidden rounded-xl border bg-white px-8 py-6 backdrop-blur-lg backdrop-filter">
             <!-- Dialog Header -->
             <div
                 class="border-outline bg-surface-alt/60 flex flex-col items-center justify-center gap-2 px-4 pb-4 pt-10">
                 <h3 id="defaultModalTitle"
                     class="text-on-surface-strong text-center font-inter text-xl font-medium tracking-wide">
-                    Tambah
-                    Jurusan</h3>
+                    Tambah Jurusan</h3>
                 <p class="font-inter text-sm text-gray-600">Buat jurusan sebelum integrasi dengan kelas.</p>
             </div>
             <!-- Dialog Body -->
             <div class="px-8">
-                <form wire:submit='createMajor'>
+                <form wire:submit.prevent='createMajor'>
                     <div class="mb-4">
                         <label for="name" class="font-inter text-sm font-semibold text-slate-500">Nama
                             Jurusan</label>
@@ -232,7 +232,6 @@ new class extends Component {
                                 {{ $message }}</p>
                         @enderror
                     </div>
-
             </div>
             <!-- Dialog Footer -->
             <div
@@ -240,8 +239,7 @@ new class extends Component {
                 <button x-on:click="showMajorModal = false" type="button"
                     class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
                 <x-primary-button type="submit" class="text-center!" color="blue"
-                    x-on:click="showMajorModal = false">Buat
-                    Jurusan</x-primary-button>
+                    x-on:click="showMajorModal = false">Buat Jurusan</x-primary-button>
                 </form>
             </div>
         </div>
@@ -338,41 +336,37 @@ new class extends Component {
 
     {{-- Modals Kelas --}}
     <div x-cloak x-show="showClassesModal" x-transition.opacity.duration.200ms
-        x-trap.inert.noscroll="showClassesModal" x-on:keydown.esc.window="showClassesModal = false"
-        x-on:click.self="showClassesModal = false"
-        class="fixed inset-0 z-30 flex w-full items-center justify-center bg-black/20 p-4 pb-8 lg:p-8" role="dialog"
+        x-on:keydown.esc.window="showClassesModal = false" x-on:click.self="showClassesModal = false"
+        class="fixed inset-0 z-50 flex w-full items-center justify-center bg-black/20 p-4 pb-8 lg:p-8" role="dialog"
         aria-modal="true" aria-labelledby="defaultModalTitle">
         <!-- Modal Dialog -->
         <div x-show="showClassesModal"
             x-transition:enter="transition ease-out duration-200 delay-100 motion-reduce:transition-opacity"
             x-transition:enter-start="opacity-0 scale-50" x-transition:enter-end="opacity-100 scale-100"
-            class="rounded-radius border-gray text-on-surface flex w-full max-w-2xl flex-col gap-4 overflow-hidden rounded-xl border bg-white px-8 py-6 backdrop-blur-lg backdrop-filter">
+            class="rounded-radius border-gray text-on-surface relative z-50 flex w-full max-w-2xl flex-col gap-4 overflow-hidden rounded-xl border bg-white px-8 py-6 backdrop-blur-lg backdrop-filter">
             <!-- Dialog Header -->
             <div
                 class="border-outline bg-surface-alt/60 flex flex-col items-center justify-center gap-2 px-4 pb-4 pt-10">
                 <h3 id="defaultModalTitle"
                     class="text-on-surface-strong text-center font-inter text-xl font-medium tracking-wide">
-                    Tambah
-                    Kelas</h3>
+                    Tambah Kelas</h3>
                 <p class="font-inter text-sm text-gray-600">Buat kelas, integrasikan dengan jurusan, dan daftarkan
-                    siswa.
-                </p>
+                    siswa.</p>
             </div>
             <!-- Dialog Body -->
             <div class="px-8">
-                <form wire:submit='createClasses'>
+                <form wire:submit.prevent='createClasses'>
                     <div class="mb-4">
                         <label for="name" class="font-inter text-sm font-semibold text-slate-500">Nama
                             Kelas</label>
                         <input type="text" wire:model="classesName"
                             placeholder="Isi nama kelas dengan tingkatan dan rombel, cth: 10 A"
                             class="flex w-full rounded-lg border-gray-300 text-sm" />
-                        @error('name')
+                        @error('classesName')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
                                 {{ $message }}</p>
                         @enderror
                     </div>
-
                     <div class="mb-4">
                         <label for="major" class="font-inter text-sm font-semibold text-slate-500">Jurusan</label>
                         <select wire:model="major" class="w-full rounded-lg border-gray-300 text-sm">
@@ -396,7 +390,7 @@ new class extends Component {
                                 <option value="{{ $year->id }}">{{ $year->name }}</option>
                             @endforeach
                         </select>
-                        @error('school_year')
+                        @error('schoolYear')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
                                 {{ $message }}</p>
                         @enderror
@@ -411,24 +405,23 @@ new class extends Component {
                                 <option value="{{ $teacher->id }}">{{ $teacher->user->name }}</option>
                             @endforeach
                         </select>
-                        @error('school_year')
+                        @error('teacher')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-500"><span class="font-medium">Oops!</span>
                                 {{ $message }}</p>
                         @enderror
                     </div>
-
             </div>
             <!-- Dialog Footer -->
             <div
                 class="border-outline bg-surface-alt/60 dark:border-outline-dark dark:bg-surface-dark/20 flex flex-col-reverse justify-between gap-2 border-t p-4 sm:flex-row sm:items-center md:justify-end">
                 <button x-on:click="showClassesModal = false" type="button"
                     class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
-                <button x-on:click="showClassesModal = false" type="submit"
-                    class="border-primary text-on-primary focus-visible:outline-primary whitespace-nowrap rounded-md border bg-slate-900 px-4 py-2 text-center font-inter text-sm font-medium tracking-wide text-white transition hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Buat
-                    Kelas</button>
+                <x-primary-button type="submit" class="text-center!" color="blue"
+                    x-on:click="showClassesModal = false">Buat Kelas</x-primary-button>
                 </form>
             </div>
         </div>
     </div>
+</div>
 
 </div>

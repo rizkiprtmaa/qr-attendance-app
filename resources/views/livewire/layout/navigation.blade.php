@@ -12,10 +12,10 @@ new class extends Component {
 }; ?>
 
 <div x-data="{ open: false }"
-    class="fixed inset-y-0 left-0 z-50 w-64 transform font-inter text-white transition duration-300 ease-in-out md:translate-x-0">
+    class="fixed inset-y-0 left-0 z-40 w-64 transform font-inter text-white transition duration-300 ease-in-out md:translate-x-0">
     <!-- Sidebar -->
     <div x-cloak :class="{ '-translate-x-full': !open, 'translate-x-0': open }"
-        class="fixed inset-y-0 left-0 z-50 min-h-screen w-64 transform rounded-r-3xl bg-white text-slate-900 transition duration-300 ease-in-out md:static md:block md:translate-x-0">
+        class="fixed inset-y-0 left-0 z-40 min-h-screen w-64 transform rounded-r-3xl bg-white text-slate-900 transition duration-300 ease-in-out md:static md:block md:translate-x-0">
         <div class="flex items-center justify-between p-4">
             <a href="{{ route('dashboard') }}" wire:navigate class="mt-5 flex items-center">
 
@@ -23,7 +23,7 @@ new class extends Component {
             </a>
 
             <!-- Close button for mobile -->
-            <button @click="open = false" class="text-white focus:outline-none md:hidden">
+            <button @click="open = false" class="z-10 text-white focus:outline-none md:hidden">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -88,11 +88,12 @@ new class extends Component {
                 @endrole
                 @role('teacher')
                     <x-sidebar-link :href="route('classes.attendances')" :active="request()->routeIs('classes.attendances')" wire:navigate>
-                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
+                        </svg>
+
                         </svg>
                         {{ __('Presensi Kelas') }}
                     </x-sidebar-link>
