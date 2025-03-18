@@ -18,7 +18,7 @@
 
 
     <div
-        class="mx-auto mt-4 max-w-7xl border-b border-gray-200 text-center text-sm font-medium text-gray-500 sm:px-6 lg:px-8 dark:border-gray-700 dark:text-gray-400">
+        class="mx-auto mt-4 max-w-7xl border-b border-gray-200 text-center text-sm font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
         <ul class="-mb-px flex flex-wrap">
             <li class="me-2">
                 <a href="{{ route('users') }}" wire:navigate

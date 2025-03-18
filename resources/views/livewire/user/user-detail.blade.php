@@ -10,6 +10,17 @@ use Livewire\WithPagination;
 new #[Layout('layouts.app')] class extends Component {
     use WithPagination;
     public $user;
+    public $userId;
+    public $name;
+    public $email;
+    public $nisn;
+    public $phone;
+    public $class;
+    public $major;
+
+    public $total_attendances;
+    public $avg_check_in;
+    public $avg_check_out;
 
     public function mount(User $user)
     {
@@ -21,23 +32,50 @@ new #[Layout('layouts.app')] class extends Component {
         $this->phone = $user->student->parent_number;
         $this->class = $user->student->classes->name;
         $this->major = $user->student->classes->major->name;
+
+        // Hitung statistik saat komponen dimuat
+        $allAttendances = Attendance::where('user_id', $this->userId)->get();
+
+        $this->total_attendances = $allAttendances->where('type', 'datang')->count();
+
+        $avg_check_in_seconds = $allAttendances->where('type', 'datang')->avg(function ($attendance) {
+            return Carbon::parse($attendance->check_in_time)->secondsSinceMidnight();
+        });
+
+        $avg_check_out_seconds = $allAttendances->where('type', 'pulang')->avg(function ($attendance) {
+            return Carbon::parse($attendance->check_out_time)->secondsSinceMidnight();
+        });
+
+        $this->avg_check_in = $avg_check_in_seconds ? gmdate('H:i:s', $avg_check_in_seconds) : '-';
+        $this->avg_check_out = $avg_check_out_seconds ? gmdate('H:i:s', $avg_check_out_seconds) : '-';
     }
 
     public function render(): mixed
     {
-        $this->attendances = Attendance::where('user_id', $this->userId)->orderBy('attendance_date', 'desc')->paginate(8);
+        // Pisahkan paginasi dari perhitungan statistik
+        $attendances = Attendance::where('user_id', $this->userId)->orderBy('attendance_date', 'desc')->paginate(6);
+
         return view('livewire.user.user-detail', [
-            'attendances' => $this->attendances,
+            'attendances' => $attendances,
+            'total_attendances' => $this->total_attendances,
+            'avg_check_in' => $this->avg_check_in,
+            'avg_check_out' => $this->avg_check_out,
         ]);
     }
 }; ?>
 
 <div class="m-6 mx-auto w-full flex-col items-center justify-center p-6" x-data="{
     nisnContent: '{{ $user->student->nisn }}',
+    toastCopy: false,
     copy() {
         $clipboard(this.nisnContent);
+        this.toastCopy = true;
+        setTimeout(() => {
+            this.toastCopy = false;
+        }, 2000);
     },
-    expand: false
+    expand: false,
+    currentUserId: '{{ $user->id }}'
 }">
     <div class="mb-7">
         <p class="font-inter text-2xl font-medium dark:text-slate-900">Detail Siswa</p>
@@ -59,10 +97,24 @@ new #[Layout('layouts.app')] class extends Component {
             <flux:separator class="block md:hidden" />
             <div class="mt-4 md:mt-0">
                 <button
-                    class="text-on-surface rounded-md border border-solid border-slate-400 px-4 py-2 font-inter text-sm text-slate-900">Unduh
-                    QR</button>
-                <button class="text-on-surface rounded-md bg-slate-900 px-4 py-2 font-inter text-sm text-white">Unduh
+                    class="text-on-surface rounded-md border border-solid border-slate-400 px-4 py-2 font-inter text-sm text-slate-900"><a
+                        :href="`/users/${currentUserId}/download-qr`">Unduh
+                        QR</a></button>
+                <button class="text-on-surface rounded-md bg-blue-500 px-4 py-2 font-inter text-sm text-white">Unduh
                     Laporan</button>
+            </div>
+            <div x-show="toastCopy" class="fixed bottom-5 right-5 z-10 rounded-md p-3 text-white">
+                <div id="toast-simple"
+                    class="flex w-full max-w-xs items-center space-x-4 divide-x divide-gray-200 rounded-lg bg-white p-4 text-gray-500 shadow-sm dark:divide-gray-700 dark:bg-gray-800 dark:text-gray-400 rtl:space-x-reverse rtl:divide-x-reverse"
+                    role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="h-5 w-5 text-blue-500">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                    </svg>
+
+                    <div class="ps-4 text-sm font-normal">Nomor Induk Siswa Nasional berhasil disalin.</div>
+                </div>
             </div>
 
         </div>
@@ -105,7 +157,8 @@ new #[Layout('layouts.app')] class extends Component {
 
         </div>
     </div>
-    <div x-cloak x-show="expand" x-transition.fade class="grid grid-cols-2 gap-2 md:hidden">
+    <div x-cloak x-show="expand" x-transition:enter.duration.500ms x-transition:leave.duration.400ms
+        class="grid grid-cols-2 gap-2 md:hidden">
         <div class="mt-2 rounded-md border border-solid border-slate-400/30 bg-white p-4 shadow-sm">
             <p class="font-inter text-sm text-slate-500">Nomor Orangtua</p>
             <p class="font-inter font-medium text-blue-600">{{ $user->student->parent_number }}</p>
@@ -123,28 +176,17 @@ new #[Layout('layouts.app')] class extends Component {
             <p class="font-inter font-medium text-blue-600">{{ $user->student->classes->name }}</p>
         </div>
     </div>
-    <div class="mt-4 flex flex-row justify-center md:hidden" x-show="!expand">
-        <flux:button class="animate-bounce" icon="arrow-down" x-on:click="expand = true">
+    <div class="mt-4 flex flex-row justify-center md:hidden" x-transition.scale.origin.bottom x-show="!expand">
+        <flux:button icon="arrow-down" x-on:click="expand = true">
             Info Lanjutan
         </flux:button>
     </div>
-    <div class="mt-4 flex flex-row justify-center md:hidden" x-show="expand">
-        <flux:button class="animate-bounce" icon="arrow-up" x-on:click="expand = false">Tutup Info</flux:button>
+    <div x-cloak class="mt-4 flex flex-row justify-center md:hidden" x-show="expand" x-transition.scale.origin.top>
+        <flux:button icon="arrow-up" x-on:click="expand = false">Tutup Info</flux:button>
     </div>
 
 
-    @php
-        $total_attendances = $attendances->where('type', 'datang')->count();
-        $latest_attendance = $attendances->where('attendance_date', Carbon::now()->toDateString())->first();
-        $avg_check_in_seconds = $attendances->where('type', 'datang')->avg(function ($attendance) {
-            return Carbon::parse($attendance->check_in_time)->secondsSinceMidnight();
-        });
-        $avg_check_out_seconds = $attendances->where('type', 'pulang')->avg(function ($attendance) {
-            return Carbon::parse($attendance->check_out_time)->secondsSinceMidnight();
-        });
-        $avg_check_in = gmdate('H:i:s', $avg_check_in_seconds);
-        $avg_check_out = gmdate('H:i:s', $avg_check_out_seconds);
-    @endphp
+
     <div class="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
         <div class="rounded-md border border-solid border-slate-400/30 bg-white p-4 shadow-sm">
             <flux:subheading class="dark:text-slate-900">Total Kehadiran</flux:subheading>
@@ -182,7 +224,7 @@ new #[Layout('layouts.app')] class extends Component {
         <div class="rounded-md border border-solid border-slate-400/30 bg-white p-4 shadow-sm">
             <flux:subheading class="dark:text-slate-900">Ranking Kehadiran</flux:subheading>
 
-            <flux:heading size="xl" class="mb-1 dark:text-slate-900">Coming Soon
+            <flux:heading size="xl" class="mb-1 text-slate-600 dark:text-slate-900">Coming Soon
             </flux:heading>
 
             <div class="flex items-center gap-2">
@@ -196,7 +238,7 @@ new #[Layout('layouts.app')] class extends Component {
     <div class="my-5">
         <p class="font-inter text-lg font-medium dark:text-slate-900">Riwayat Presensi</p>
     </div>
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         @php
             $groupedAttendances = $attendances->groupBy('attendance_date');
         @endphp
@@ -237,8 +279,10 @@ new #[Layout('layouts.app')] class extends Component {
             </div>
         @endforeach
     </div>
-    <div class="mt-4 flex flex-row justify-center">
-        {{ $attendances->links() }}
+    <div class="mt-4 flex flex-col justify-center">
+        {{ $attendances->links(data: ['scrollTo' => false]) }}
     </div>
+
+
 
 </div>

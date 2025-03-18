@@ -11,6 +11,7 @@ new class extends Component {
     public $selectedDate;
     public $major = 'all';
     public $classes = 'all';
+    public $search = '';
 
     // Tambahkan properties untuk dropdown
     public $majors;
@@ -51,6 +52,13 @@ new class extends Component {
         if ($this->classes !== 'all') {
             $query->whereHas('user.student', function ($q) {
                 $q->where('classes_id', $this->classes);
+            });
+        }
+
+        // Filter berdasarkan pencarian
+        if (!empty($this->search)) {
+            $query->whereHas('user', function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%');
             });
         }
 
@@ -110,7 +118,8 @@ new class extends Component {
                 </div>
             </div>
             <div class="flex items-center">
-                <flux:input kbd="⌘K" icon="magnifying-glass" placeholder="Search..." />
+                <flux:input wire:model.live.debounce.300ms="search" kbd="⌘K" icon="magnifying-glass"
+                    placeholder="Cari nama..." />
             </div>
         </div>
 
@@ -144,7 +153,7 @@ new class extends Component {
 
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
 
-            <table class="w-full text-left font-inter text-sm rtl:text-right dark:text-gray-400">
+            <table class="w-full text-left font-inter text-sm dark:text-gray-400 rtl:text-right">
                 <thead class="bg-blue-500 text-xs uppercase text-white dark:bg-gray-700 dark:text-gray-400">
                     <tr>
 

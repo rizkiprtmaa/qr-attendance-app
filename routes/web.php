@@ -71,5 +71,7 @@ Route::view('arrival-scanner', 'admin.attendances.arrival-scanner')->middleware(
 
 Volt::route('users/{user}/detail', 'user.user-detail')->middleware(['auth', 'verified', 'role:admin|teacher'])->name('user.detail');
 
+Route::view('attendances', 'teacher.classes.index')->middleware(['auth', 'verified', 'role:teacher'])->name('');
+
 
 require __DIR__ . '/auth.php';

@@ -9,19 +9,26 @@ new class extends Component {
     public $scan_type = 'datang';
     public $scan_message = '';
     public $scan_status = 'idle';
-    public $last_scanned_token = null;
-    public $listeners = ['process-scan' => 'processScan'];
+
+    public $scanned_user = null;
+    public $show_confirmation = false;
+    public $listeners = [
+        'process-scan' => 'processScan',
+        'confirm-attendance' => 'confirmAttendance',
+        'cancel-attendance' => 'cancelAttendance',
+    ];
 
     public function changeScanType($type)
     {
         $this->scan_type = $type;
-        $this->reset('scan_message', 'scan_status', 'last_scanned_token');
+        $this->reset('scan_message', 'scan_status', 'last_scanned_token', 'scanned_user', 'show_confirmation');
     }
 
     public function resetMessage()
     {
         $this->scan_message = '';
         $this->scan_status = 'idle';
+        $this->show_confirmation = false;
     }
 
     public function processScan($token)
@@ -35,40 +42,104 @@ new class extends Component {
             return;
         }
 
+        // Validasi presensi sebelumnya
         try {
-            // Rekam kehadiran
-            $attendance = Attendance::recordAttendance($user->id, $this->scan_type);
+            $now = Carbon::now()->timezone('Asia/Jakarta');
+            $today = $now->toDateString();
 
-            // Customize pesan berdasarkan tipe scan
-            if ($this->scan_type === 'datang') {
-                $this->scan_message = "Selamat datang, {$user->name}. Anda tercatat hadir pada " . Carbon::now()->timezone('Asia/Jakarta')->format('H:i');
-            } else {
-                $this->scan_message = "Selamat pulang, {$user->name}. Anda tercatat pulang pada " . Carbon::now()->timezone('Asia/Jakarta')->format('H:i');
+            $existingAttendance = Attendance::where('user_id', $user->id)->where('attendance_date', $today)->where('type', $this->scan_type)->first();
+
+            if ($existingAttendance) {
+                $this->scan_message = $this->scan_type === 'datang' ? 'Anda sudah melakukan presensi datang hari ini.' : 'Anda sudah melakukan presensi pulang hari ini.';
+                $this->scan_status = 'error';
+                return;
             }
 
-            $this->scan_status = 'success';
-            $this->last_scanned_token = $token;
+            // Untuk presensi pulang, pastikan sudah presensi datang
+            if ($this->scan_type === 'pulang') {
+                $checkIn = Attendance::where('user_id', $user->id)->where('attendance_date', $today)->where('type', 'datang')->first();
+
+                if (!$checkIn) {
+                    $this->scan_message = 'Anda belum melakukan presensi datang hari ini.';
+                    $this->scan_status = 'error';
+                    return;
+                }
+            }
+
+            // Tentukan status presensi
+            $status = Attendance::determineAttendanceStatus($this->scan_type, $now);
+
+            // Tampilkan konfirmasi
+            $this->scanned_user = $user;
+
+            $this->show_confirmation = true;
+
+            // Persiapkan pesan konfirmasi dengan detail status
+            $statusMessage = match ($status) {
+                'terlambat' => 'Anda terlambat',
+                'pulang_cepat' => 'Anda pulang sebelum waktu normal',
+                default => 'Presensi dalam waktu normal',
+            };
+
+            $this->scan_message = $this->scan_type === 'datang' ? "Konfirmasi presensi datang untuk {$user->name}. Status: {$statusMessage}" : "Konfirmasi presensi pulang untuk {$user->name}. Status: {$statusMessage}";
+
+            $this->scan_status = 'confirmation';
         } catch (\Exception $e) {
-            $this->scan_message = 'Terjadi kesalahan saat mencatat presensi: ' . $e->getMessage();
+            $this->scan_message = 'Terjadi kesalahan: ' . $e->getMessage();
+            $this->scan_status = 'error';
+        }
+    }
+
+    public function confirmAttendance()
+    {
+        if (!$this->scanned_user) {
+            $this->scan_message = 'Tidak ada data yang dikonfirmasi';
             $this->scan_status = 'error';
             return;
         }
 
-        // Dispatch event untuk update tabel
-        $this->dispatch('scan-attendance');
+        try {
+            // Rekam kehadiran
+            $attendance = Attendance::recordAttendance($this->scanned_user->id, $this->scan_type);
+
+            // Customize pesan berdasarkan tipe scan
+            $now = Carbon::now()->timezone('Asia/Jakarta');
+            $this->scan_message = $this->scan_type === 'datang' ? "Selamat datang, {$this->scanned_user->name}. Anda tercatat hadir pada {$now->format('H:i')}" : "Selamat pulang, {$this->scanned_user->name}. Anda tercatat pulang pada {$now->format('H:i')}";
+
+            $this->scan_status = 'success';
+            $this->show_confirmation = false;
+            $this->scanned_user = null;
+
+            // Dispatch event untuk update tabel
+            $this->dispatch('scan-attendance');
+        } catch (\Exception $e) {
+            $this->scan_message = 'Terjadi kesalahan saat mencatat presensi: ' . $e->getMessage();
+            $this->scan_status = 'error';
+            $this->show_confirmation = false;
+        }
+    }
+
+    public function cancelAttendance()
+    {
+        $this->show_confirmation = false;
+        $this->scanned_user = null;
+        $this->scan_message = 'Presensi dibatalkan';
+        $this->scan_status = 'idle';
     }
 
     #[On('scan-attendance')]
     public function render(): mixed
     {
-        return view('livewire.admin.attendance-qr-scanner');
+        return view('livewire.admin.attendance-qr-scanner', [
+            'show_confirmation' => $this->show_confirmation,
+            'scanned_user' => $this->scanned_user,
+        ]);
     }
 };
 
 ?>
 
 <div x-data="qrScanner()" x-init="initializeLibrary()" class="flex min-h-[80vh] flex-col items-center justify-center">
-
     <div class="min-w-[450px] overflow-hidden rounded-xl bg-white shadow-md">
         <div class="p-8">
             <h2 class="mb-4 text-center text-2xl font-bold">Presensi QR</h2>
@@ -85,7 +156,33 @@ new class extends Component {
                 </button>
             </div>
 
+            {{-- Modal Konfirmasi --}}
+            @if ($show_confirmation && $scanned_user)
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div class="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-xl">
+                        <h3 class="mb-4 text-xl font-bold">Konfirmasi Presensi</h3>
 
+                        <div class="mb-4">
+                            <p class="text-lg">
+                                {{ $scan_type === 'datang' ? 'Presensi Datang' : 'Presensi Pulang' }}
+                            </p>
+                            <p class="font-semibold text-gray-700">{{ $scanned_user->name }}</p>
+                            <p class="text-sm text-gray-600">{{ $scan_message }}</p>
+                        </div>
+
+                        <div class="flex justify-center space-x-4">
+                            <button wire:click="confirmAttendance" @click="stopScanning()"
+                                class="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600">
+                                Konfirmasi
+                            </button>
+                            <button wire:click="cancelAttendance"
+                                class="rounded bg-red-500 px-4 py-2 text-white transition hover:bg-red-600">
+                                Batalkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             {{-- Pesan Hasil Scan --}}
             @if ($scan_message)
@@ -123,138 +220,129 @@ new class extends Component {
                 </div>
             </div>
 
-            {{-- Debug Token --}}
-            @if ($last_scanned_token)
-                <div class="mt-6 rounded bg-gray-100 p-2">
-                    <strong>Terakhir di-scan:</strong> {{ $last_scanned_token }}
-                </div>
-            @endif
+
         </div>
-    </div>
 
+        <script>
+            function qrScanner() {
+                return {
+                    isScanning: false,
+                    scanner: null,
+                    debugMessage: '',
 
-    <script>
-        function qrScanner() {
-            return {
-                isScanning: false,
-                scanner: null,
-                debugMessage: '',
+                    initializeLibrary() {
+                        if (typeof Html5Qrcode === 'undefined') {
+                            const script = document.createElement('script');
+                            script.src = 'https://unpkg.com/html5-qrcode';
+                            script.async = true;
+                            script.onload = () => {
+                                this.debugMessage = 'Library QR berhasil dimuat';
+                                console.log('Library QR berhasil dimuat');
+                            };
+                            script.onerror = () => {
+                                this.debugMessage = 'Gagal memuat library QR';
+                                console.error('Gagal memuat library QR');
+                            };
+                            document.head.appendChild(script);
+                        }
+                    },
 
-                initializeLibrary() {
-                    if (typeof Html5Qrcode === 'undefined') {
-                        const script = document.createElement('script');
-                        script.src = 'https://unpkg.com/html5-qrcode';
-                        script.async = true;
-                        script.onload = () => {
-                            this.debugMessage = 'Library QR berhasil dimuat';
-                            console.log('Library QR berhasil dimuat');
-                        };
-                        script.onerror = () => {
-                            this.debugMessage = 'Gagal memuat library QR';
-                            console.error('Gagal memuat library QR');
-                        };
-                        document.head.appendChild(script);
-                    }
-                },
-
-                startScanning() {
-                    if (typeof Html5Qrcode === 'undefined') {
-                        this.debugMessage = 'Tunggu library dimuat...';
-                        return;
-                    }
-
-                    this.debugMessage = 'Memulai scanning...';
-                    this.isScanning = true;
-
-                    this.$nextTick(() => {
-                        const readerElement = document.getElementById('reader');
-                        if (!readerElement) {
-                            this.debugMessage = 'Elemen reader tidak ditemukan';
+                    startScanning() {
+                        if (typeof Html5Qrcode === 'undefined') {
+                            this.debugMessage = 'Tunggu library dimuat...';
                             return;
                         }
 
-                        // Bersihkan elemen reader
-                        readerElement.innerHTML = '';
+                        this.debugMessage = 'Memulai scanning...';
+                        this.isScanning = true;
 
-                        try {
-                            this.scanner = new Html5Qrcode("reader", {
-                                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-                            });
+                        this.$nextTick(() => {
+                            const readerElement = document.getElementById('reader');
+                            if (!readerElement) {
+                                this.debugMessage = 'Elemen reader tidak ditemukan';
+                                return;
+                            }
 
-                            Html5Qrcode.getCameras().then(devices => {
-                                if (devices && devices.length) {
-                                    // Gunakan kamera yang tersimpan sebelumnya atau kamera pertama
-                                    const cameraId = this.lastCameraId ||
-                                        (devices.length > 1 ? devices[1].id : devices[0].id);
+                            // Bersihkan elemen reader
+                            readerElement.innerHTML = '';
 
-                                    this.lastCameraId = cameraId; // Simpan untuk penggunaan berikutnya
-                                    this.debugMessage = `Menggunakan kamera: ${cameraId}`;
+                            try {
+                                this.scanner = new Html5Qrcode("reader", {
+                                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+                                });
 
-                                    // Mulai scanner dengan kamera yang dipilih
-                                    this.scanner.start(
-                                        cameraId, {
-                                            fps: 5,
-                                            qrbox: 250,
-                                            aspectRatio: 1.333
-                                        },
-                                        (decodedText) => {
-                                            console.log('QR Decoded:', decodedText);
-                                            this.debugMessage = `Berhasil scan: ${decodedText}`;
+                                Html5Qrcode.getCameras().then(devices => {
+                                    if (devices && devices.length) {
+                                        // Gunakan kamera yang tersimpan sebelumnya atau kamera pertama
+                                        const cameraId = this.lastCameraId ||
+                                            (devices.length > 1 ? devices[1].id : devices[0].id);
 
-                                            // Kirim token ke backend
-                                            if (decodedText) {
-                                                // Stop scanner sepenuhnya
-                                                this.scanner.stop().then(() => {
-                                                    // Kirim data ke Livewire
-                                                    Livewire.dispatch('process-scan', {
-                                                        token: decodedText
+                                        this.lastCameraId = cameraId; // Simpan untuk penggunaan berikutnya
+                                        this.debugMessage = `Menggunakan kamera: ${cameraId}`;
+
+                                        // Mulai scanner dengan kamera yang dipilih
+                                        this.scanner.start(
+                                            cameraId, {
+                                                fps: 5,
+                                                qrbox: 250,
+                                                aspectRatio: 1.333
+                                            },
+                                            (decodedText) => {
+                                                console.log('QR Decoded:', decodedText);
+                                                this.debugMessage = `Berhasil scan: ${decodedText}`;
+
+                                                // Kirim token ke backend
+                                                if (decodedText) {
+                                                    // Stop scanner sepenuhnya
+                                                    this.scanner.stop().then(() => {
+                                                        // Kirim data ke Livewire
+                                                        Livewire.dispatch('process-scan', {
+                                                            token: decodedText
+                                                        });
+
+                                                        Livewire.on('scan-attendance', () => {
+                                                            this.startScanning();
+                                                        });
+
+
+                                                    }).catch(err => {
+                                                        console.error('Error stopping scanner:',
+                                                            err);
+                                                        // Coba restart scanner meski ada error
+                                                        setTimeout(() => {
+                                                            this.startScanning();
+                                                        }, 2000);
                                                     });
-
-                                                    // Restart scanner setelah beberapa detik
-                                                    setTimeout(() => {
-                                                        this.startScanning();
-                                                    }, 1000);
-                                                }).catch(err => {
-                                                    console.error('Error stopping scanner:',
-                                                        err);
-                                                    // Coba restart scanner meski ada error
-                                                    setTimeout(() => {
-                                                        this.startScanning();
-                                                    }, 2000);
-                                                });
+                                                }
+                                            },
+                                            (errorMessage) => {
+                                                // Hanya log error
+                                                // console.error(`QR Error: ${errorMessage}`);
                                             }
-                                        },
-                                        (errorMessage) => {
-                                            // Hanya log error
-                                            // console.error(`QR Error: ${errorMessage}`);
-                                        }
-                                    );
-                                } else {
-                                    this.debugMessage = 'Tidak ada kamera yang tersedia';
-                                }
-                            }).catch(err => {
-                                console.error('Camera access error:', err);
-                                this.debugMessage = `Error akses kamera: ${err.message}`;
-                            });
-                        } catch (e) {
-                            console.error('Exception in startScanning:', e);
-                            this.debugMessage = `Eksepsi: ${e.message}`;
+                                        );
+                                    } else {
+                                        this.debugMessage = 'Tidak ada kamera yang tersedia';
+                                    }
+                                }).catch(err => {
+                                    console.error('Camera access error:', err);
+                                    this.debugMessage = `Error akses kamera: ${err.message}`;
+                                });
+                            } catch (e) {
+                                console.error('Exception in startScanning:', e);
+                                this.debugMessage = `Eksepsi: ${e.message}`;
+                            }
+                        });
+                    },
+
+                    stopScanning() {
+                        if (this.scanner) {
+                            this.scanner.stop();
+                            this.scanner = null;
                         }
-                    });
-                },
-
-                stopScanning() {
-                    if (this.scanner) {
-                        this.scanner.stop();
-                        this.scanner = null;
+                        this.isScanning = false;
+                        this.debugMessage = 'Scanner dihentikan';
                     }
-                    this.isScanning = false;
-                    this.debugMessage = 'Scanner dihentikan';
-                }
-            };
-        }
-    </script>
-
-
-
-</div>
+                };
+            }
+        </script>
+    </div>
