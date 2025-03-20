@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subject_class_attendances', function (Blueprint $table) {
+        Schema::create('subject_classes', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->foreignId('subject_class_session_id');
-            $table->foreignId('student_id');
-            $table->enum('status', ['hadir', 'tidak_hadir', 'sakit', 'izin'])->default('tidak_hadir');
-            $table->datetime('check_in_time')->nullable();
+            $table->foreignId('classes_id');
+            $table->foreignId('teacher_id');
+            $table->string('class_name');
+            $table->string('class_code');
         });
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('subject_class_attendances');
+        Schema::dropIfExists('subject_classes');
     }
 };

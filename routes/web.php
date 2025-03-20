@@ -5,7 +5,7 @@ use Livewire\Volt\Volt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AttendanceController;
-
+use App\Models\SubjectClassSession;
 
 Route::view('/', 'welcome');
 
@@ -72,6 +72,12 @@ Route::view('arrival-scanner', 'admin.attendances.arrival-scanner')->middleware(
 Volt::route('users/{user}/detail', 'user.user-detail')->middleware(['auth', 'verified', 'role:admin|teacher'])->name('user.detail');
 
 Route::view('classes-attendances', 'teacher.classes.index')->middleware(['auth', 'verified', 'role:teacher'])->name('classes.attendances');
+Volt::route('classes-attendances/{subjectClass}/detail', 'teacher.detail-subject-class')->middleware(['auth', 'verified', 'role:teacher'])->name('subject.detail');
+
+Volt::route('/session/{session}/attendance', 'teacher.subject-class-attendance')->middleware(['auth', 'verified', 'role:teacher'])
+    ->name('session.attendance');
+
+
 
 
 require __DIR__ . '/auth.php';

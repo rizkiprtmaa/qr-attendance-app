@@ -16,12 +16,12 @@
 @endphp
 
 <button type="{{ $type }}" @if ($action) @click="{{ $action }}" @endif
-    class="{{ $colorClasses }} flex flex-row gap-1 rounded-xl border px-3 py-1 text-center shadow-[inset_0_2px_0px_0px_rgba(255,255,255,0.25),0_2px_4px_0px_rgba(22,123,223,0.5)] transition duration-300 ease-in-out hover:opacity-90 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:py-2"
+    class="{{ $colorClasses }} flex flex-col items-center gap-1 rounded-xl border px-3 py-1 text-center shadow-[inset_0_2px_0px_0px_rgba(255,255,255,0.25),0_2px_4px_0px_rgba(22,123,223,0.5)] transition duration-300 ease-in-out hover:opacity-90 active:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 md:flex-row md:px-6 md:py-2"
     {{ $attributes }}>
     {{ $slot }}
 
     @if ($icon)
-        <span>
+        <span hidden md:block>
             {{ $icon }}
         </span>
     @endif

@@ -17,20 +17,24 @@ new class extends Component {
     <div x-cloak :class="{ '-translate-x-full': !open, 'translate-x-0': open }"
         class="fixed inset-y-0 left-0 z-40 min-h-screen w-64 transform rounded-r-3xl bg-white text-slate-900 transition duration-300 ease-in-out md:static md:block md:translate-x-0">
         <div class="flex items-center justify-between p-4">
-            <a href="{{ route('dashboard') }}" wire:navigate class="mt-5 flex items-center">
-
-                <span class="ml-4 text-lg font-medium">SMK Nurussalam</span>
+            <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center justify-end">
+                <span class="ml-4 mt-2 text-lg font-medium">SMK Nurussalam</span>
             </a>
-
-            <!-- Close button for mobile -->
-            <button @click="open = false" class="z-10 text-white focus:outline-none md:hidden">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <button @click="open = !open" x-show="open"
+                class="z-50 ml-2 mt-2 rounded-full bg-white p-2 text-gray-900 focus:outline-none md:hidden">
+                <svg height="512" class="h-4 w-4" viewBox="0 0 24 24" width="512"
+                    xmlns="http://www.w3.org/2000/svg" id="fi_9777564">
+                    <g id="_01" data-name="01">
+                        <path
+                            d="m15 1.25h-6c-.3 0-.594.01-.879.024a.81.81 0 0 0 -.121-.024.732.732 0 0 0 -.261.053c-4.526.352-6.489 2.708-6.489 7.697v6c0 4.989 1.963 7.345 6.489 7.7a.732.732 0 0 0 .261.05.81.81 0 0 0 .121-.024c.285.014.575.024.879.024h6c5.432 0 7.75-2.317 7.75-7.75v-6c0-5.433-2.318-7.75-7.75-7.75zm-7.75 19.9c-3.282-.414-4.5-2.175-4.5-6.148v-6.002c0-3.973 1.218-5.734 4.5-6.148zm14-6.15c0 4.614-1.636 6.25-6.25 6.25h-6c-.087 0-.165 0-.25-.006v-18.488c.085 0 .163-.006.25-.006h6c4.614 0 6.25 1.636 6.25 6.25zm-5.72-5.029-2.03 2.029 2.029 2.029a.75.75 0 1 1 -1.06 1.061l-2.56-2.56a.749.749 0 0 1 0-1.06l2.56-2.56a.75.75 0 0 1 1.06 1.061z">
+                        </path>
+                    </g>
                 </svg>
             </button>
+
         </div>
 
-        <nav class="mt-5">
+        <nav class="mt-4">
             <div class="px-4">
                 <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -130,14 +134,19 @@ new class extends Component {
     </div>
 
     <!-- Mobile Menu Toggle -->
-    <button @click="open = !open" class="fixed left-4 top-4 z-50 text-gray-800 focus:outline-none md:hidden">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path :class="{ 'hidden': open, 'block': !open }" class="block" stroke-linecap="round"
-                stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            <path :class="{ 'block': open, 'hidden': !open }" class="hidden" stroke-linecap="round"
-                stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <button @click="open = !open" x-show="!open" x-transition.origin.top.left.duration.200ms
+        class="inset-y-0 z-50 ml-5 mt-5 rounded-full bg-white p-2 text-gray-900 focus:outline-none md:hidden">
+        <svg height="512" class="h-4 w-4" viewBox="0 0 24 24" width="512" xmlns="http://www.w3.org/2000/svg"
+            id="fi_9777566">
+            <g id="_01" data-name="01">
+                <path
+                    d="m15 1.25h-6c-5.433 0-7.75 2.317-7.75 7.75v6c0 5.433 2.317 7.75 7.75 7.75h6c5.433 0 7.75-2.317 7.75-7.75v-6c0-5.433-2.317-7.75-7.75-7.75zm-.75 20h-5.25c-4.614 0-6.25-1.636-6.25-6.25v-6c0-4.614 1.636-6.25 6.25-6.25h5.25zm7-6.25c0 4.354-1.459 6.054-5.5 6.232v-18.464c4.041.178 5.5 1.878 5.5 6.232zm-12.72-6.09 2.56 2.56a.749.749 0 0 1 0 1.06l-2.56 2.56a.75.75 0 0 1 -1.06-1.061l2.03-2.029-2.03-2.029a.75.75 0 0 1 1.06-1.061z">
+                </path>
+            </g>
         </svg>
     </button>
+
+
 
     <!-- Main Content Area -->
     <div class="flex-1 bg-gray-100 transition-all duration-300 ease-in-out md:ml-64">
