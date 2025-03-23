@@ -151,7 +151,7 @@ new class extends Component {
 
     <div class="flex flex-col">
         @foreach ($subjectClasses as $subjectClass)
-            <div class="mb-6 rounded-lg bg-gray-200">
+            <div class="mb-6 rounded-lg bg-blue-100">
                 <div class="rounded-lg bg-white px-6 py-3 shadow-md">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
@@ -185,7 +185,7 @@ new class extends Component {
                         </a>
                     </div>
                 </div>
-                <div class="-z-10 flex flex-row justify-between gap-4 rounded-b-md bg-gray-200 p-6 shadow-sm">
+                <div class="-z-10 flex flex-row justify-between gap-4 rounded-b-md bg-blue-100 p-6 shadow-sm">
                     <div class="flex flex-row gap-4">
                         <div class="flex items-center rounded-md bg-gray-400 px-2 py-1 text-white shadow-md">
                             {{ $subjectClass->classes->name }}

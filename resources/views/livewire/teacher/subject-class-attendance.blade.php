@@ -400,8 +400,11 @@ new #[Layout('layouts.app')] class extends Component {
                                     </button>
 
                                     <div x-show="open" @click.away="open = false"
-                                        :class="{ 'right-0 left-auto': window.innerWidth > 640, 'right-auto left-0': window
-                                                .innerWidth <= 640 }"
+                                        :class="{
+                                            'right-0 left-auto': window.innerWidth > 640,
+                                            'right-0 left-auto': window
+                                                .innerWidth <= 640
+                                        }"
                                         style="max-width: 90vw;"
                                         class="absolute z-10 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                         <div class="py-1">

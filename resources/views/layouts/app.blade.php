@@ -21,6 +21,7 @@
 
 
     <script type="module" src="https://unpkg.com/cally"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
