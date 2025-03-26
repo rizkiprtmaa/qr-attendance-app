@@ -6,45 +6,234 @@ use App\Models\Attendance;
 use App\Models\SubjectClass;
 use App\Models\SubjectClassSession;
 use App\Models\Teacher;
+use App\Models\SubjectClassAttendance;
 
 new class extends Component {
     public $attendances;
     public $subjectClass;
     public $subjectClassSessions;
     public $teacherId;
+    public $studentAttendances;
+
+    // Statistik kehadiran
+    public $attendanceStats = [
+        'total_attendance_rate' => 0,
+        'izin_sakit_rate' => 0,
+        'tanpa_keterangan_rate' => 0,
+        'students_needing_attention' => 0,
+    ];
+
+    protected function calculateAttendanceStatistics()
+    {
+        if ($this->studentAttendances->isEmpty()) {
+            return;
+        }
+
+        // Total jumlah attendance
+        $totalAttendances = $this->studentAttendances->count();
+
+        // Hitung jumlah setiap status
+        $attendanceBreakdown = $this->studentAttendances->groupBy('status')->map->count()->toArray();
+
+        // Perhitungan persentase
+        $hadir = $attendanceBreakdown['hadir'] ?? 0;
+        $tidakHadir = $attendanceBreakdown['tidak_hadir'] ?? 0;
+        $sakit = $attendanceBreakdown['sakit'] ?? 0;
+        $izin = $attendanceBreakdown['izin'] ?? 0;
+
+        // Hitung total kehadiran
+        $this->attendanceStats['total_attendance_rate'] = $totalAttendances > 0 ? round(($hadir / $totalAttendances) * 100, 2) : 0;
+
+        // Hitung persentase izin/sakit
+        $this->attendanceStats['izin_sakit_rate'] = $totalAttendances > 0 ? round((($sakit + $izin) / $totalAttendances) * 100, 2) : 0;
+
+        // Hitung persentase tanpa keterangan
+        $this->attendanceStats['tanpa_keterangan_rate'] = $totalAttendances > 0 ? round(($tidakHadir / $totalAttendances) * 100, 2) : 0;
+
+        // Identifikasi siswa yang membutuhkan perhatian (kehadiran < 70%)
+        $studentAttendanceRates = $this->calculateStudentAttendanceRates();
+        $this->attendanceStats['students_needing_attention'] = count(
+            array_filter($studentAttendanceRates, function ($rate) {
+                return $rate < 70;
+            }),
+        );
+
+        // Perhitungan statistik per kelas
+        $this->calculateClassAttendanceStatistics();
+    }
+
+    protected function calculateStudentAttendanceRates()
+    {
+        // Hitung persentase kehadiran per siswa
+        $studentAttendanceRates = [];
+
+        // Kelompokkan attendance berdasarkan student_id
+        $studentAttendances = $this->studentAttendances->groupBy('student_id');
+
+        foreach ($studentAttendances as $studentId => $attendances) {
+            $totalSessions = $attendances->count();
+            $presentSessions = $attendances->where('status', 'hadir')->count();
+
+            $attendanceRate = $totalSessions > 0 ? round(($presentSessions / $totalSessions) * 100, 2) : 0;
+
+            $studentAttendanceRates[$studentId] = $attendanceRate;
+        }
+
+        return $studentAttendanceRates;
+    }
+
+    protected function calculateClassAttendanceStatistics()
+    {
+        // Inisialisasi array untuk menyimpan statistik per kelas
+        $classStats = [];
+
+        foreach ($this->subjectClass as $class) {
+            // Ambil semua sesi untuk kelas ini
+            $sessions = $this->subjectClassSessions->where('subject_class_id', $class->id);
+
+            if ($sessions->isEmpty()) {
+                continue;
+            }
+
+            // Ambil semua attendance untuk sesi-sesi di kelas ini - gunakan collection filter
+            $sessionIds = $sessions->pluck('id')->toArray();
+            $classAttendances = $this->studentAttendances->whereIn('subject_class_session_id', $sessionIds);
+
+            if ($classAttendances->isEmpty()) {
+                continue;
+            }
+
+            // Hitung total attendance untuk kelas ini
+            $totalClassAttendances = $classAttendances->count();
+
+            // Hitung breakdown status untuk kelas ini
+            $statusCounts = $classAttendances->groupBy('status')->map->count();
+
+            // Hitung persentase untuk setiap status
+            $hadirCount = $statusCounts['hadir'] ?? 0;
+            $sakitCount = $statusCounts['sakit'] ?? 0;
+            $izinCount = $statusCounts['izin'] ?? 0;
+            $tidakHadirCount = $statusCounts['tidak_hadir'] ?? 0;
+
+            // Hitung tren (bandingkan dengan bulan lalu jika data tersedia)
+            $currentMonthAttendances = $classAttendances->filter(function ($attendance) {
+                $session = $this->subjectClassSessions->firstWhere('id', $attendance->subject_class_session_id);
+                if (!$session) {
+                    return false;
+                }
+
+                $sessionDate = \Carbon\Carbon::parse($session->class_date);
+                $currentMonth = \Carbon\Carbon::now()->startOfMonth();
+
+                return $sessionDate->month == $currentMonth->month && $sessionDate->year == $currentMonth->year;
+            });
+
+            $lastMonthAttendances = $classAttendances->filter(function ($attendance) {
+                $session = $this->subjectClassSessions->firstWhere('id', $attendance->subject_class_session_id);
+                if (!$session) {
+                    return false;
+                }
+
+                $sessionDate = \Carbon\Carbon::parse($session->class_date);
+                $lastMonth = \Carbon\Carbon::now()->subMonth()->startOfMonth();
+
+                return $sessionDate->month == $lastMonth->month && $sessionDate->year == $lastMonth->year;
+            });
+
+            $currentMonthRate = $currentMonthAttendances->isNotEmpty() ? ($currentMonthAttendances->where('status', 'hadir')->count() / $currentMonthAttendances->count()) * 100 : 0;
+
+            $lastMonthRate = $lastMonthAttendances->isNotEmpty() ? ($lastMonthAttendances->where('status', 'hadir')->count() / $lastMonthAttendances->count()) * 100 : 0;
+
+            $trend = $lastMonthRate > 0 ? round($currentMonthRate - $lastMonthRate, 1) : 0;
+
+            // Simpan statistik kelas
+            $classStats[] = [
+                'id' => $class->id,
+                'name' => $class->class_name,
+                'class_name' => $class->classes->name,
+                'attendance_rate' => $totalClassAttendances > 0 ? round(($hadirCount / $totalClassAttendances) * 100, 1) : 0,
+                'izin_sakit_rate' => $totalClassAttendances > 0 ? round((($sakitCount + $izinCount) / $totalClassAttendances) * 100, 1) : 0,
+                'tanpa_keterangan_rate' => $totalClassAttendances > 0 ? round(($tidakHadirCount / $totalClassAttendances) * 100, 1) : 0,
+                'trend' => $trend,
+            ];
+        }
+
+        // Urutkan statistik
+        usort($classStats, function ($a, $b) {
+            return $b['attendance_rate'] <=> $a['attendance_rate'];
+        });
+
+        $this->classAttendanceStats = $classStats;
+    }
 
     public function mount()
     {
         $this->teacherId = auth()->user()->id;
-        $this->teacher = Teacher::where('id', auth()->user()->id)->get();
-        $this->attendances = Attendance::where('user_id', auth()->user()->id)->get();
-        $this->subjectClass = SubjectClass::where('teacher_id', auth()->user()->id)->get();
-        $this->subjectClassSessions = SubjectClassSession::whereIn('subject_class_id', $this->subjectClass->pluck('id'))->get();
+
+        // 1. Load teacher (mengurangi 1 query)
+        $this->teacher = Teacher::find($this->teacherId);
+
+        // 2. Load attendances + user (mengurangi 1 query)
+        $this->attendances = Attendance::with('user')->where('user_id', $this->teacherId)->get();
+
+        // 3. Load subject classes dan SEMUA relasinya sekaligus (mengurangi >10 query)
+        $this->subjectClass = SubjectClass::with(['classes.major', 'classes.student'])
+            ->where('teacher_id', $this->teacherId)
+            ->get();
+
+        // 4. Load semua subject class sessions dan SEMUA relasi untuk perhitungan statistik (mengurangi >5 query)
+        $subjectClassIds = $this->subjectClass->pluck('id')->toArray();
+
+        // PENTING: Eager load semua relasi yang dibutuhkan di view
+        $this->subjectClassSessions = SubjectClassSession::with([
+            'subjectClass.classes.major', // Eager load nested relations
+            'subjectClassAttendances',
+        ])
+            ->whereIn('subject_class_id', $subjectClassIds)
+            ->get();
+
+        // 5. Proses data-data ini setelah dimuat
+        $this->studentAttendances = collect();
+
+        foreach ($this->subjectClassSessions as $session) {
+            $this->studentAttendances = $this->studentAttendances->concat($session->subjectClassAttendances);
+        }
+
+        $this->studentAttendanceStatus = $this->studentAttendances->pluck('status');
+        $this->checkInTime = $this->studentAttendances->pluck('check_in_time');
+
+        // 6. Pre-compute semua statistik
+        $this->calculateAttendanceStatistics();
+
+        // 7. Pra-hitung nilai yang diperlukan di render
+        $this->totalHours = $this->calculateTotalHours();
+    }
+
+    private function calculateTotalHours()
+    {
+        $totalHours = 0;
+        foreach ($this->subjectClassSessions as $session) {
+            $start = \Carbon\Carbon::parse($session->start_time);
+            $end = \Carbon\Carbon::parse($session->end_time);
+            $totalHours += $start->diffInHours($end);
+        }
+        return number_format($totalHours, 2, '.', '');
     }
 
     public function render(): mixed
     {
-        // Calculate total hours based on sessions
-        $totalHours = 0;
-        $sessionsQuery = SubjectClassSession::whereIn('subject_class_id', $this->subjectClass->pluck('id'));
-
-        foreach ($sessionsQuery->get() as $session) {
-            $start = \Carbon\Carbon::parse($session->start_time);
-            $end = \Carbon\Carbon::parse($session->end_time);
-            $totalHours += $start->diffInHours($end); // Pastikan urutan parameter benar
-        }
-
-        $totalHours = number_format($totalHours, 2, '.', '');
-
-        $totalSubjectClassSessions = $this->subjectClassSessions->count();
         return view('livewire.teacher.dashboard', [
             'attendances' => $this->attendances,
             'totalAttendances' => $this->attendances->count(),
             'totalSubjectClasses' => $this->subjectClass->count(),
-            'totalSubjectClassSessions' => $totalSubjectClassSessions,
+            'totalSubjectClassSessions' => $this->subjectClassSessions->count(),
             'teacher' => $this->teacher,
-            'totalHours' => $totalHours,
+            'totalHours' => $this->totalHours,
             'subjectClassSessions' => $this->subjectClassSessions,
+            'studentAttendanceStatus' => $this->studentAttendanceStatus,
+            'checkInTime' => $this->checkInTime,
+            'attendanceStats' => $this->attendanceStats,
+            'classAttendanceStats' => $this->classAttendanceStats ?? [],
         ]);
     }
 }; ?>
@@ -61,30 +250,26 @@ new class extends Component {
     activeTab: 'overview'
 }">
     <!-- Header Section -->
-    <div class="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-        <div>
-            @php
-                $hour = \Carbon\Carbon::now('Asia/Jakarta')->hour;
-                if ($hour >= 5 && $hour < 12) {
-                    $greeting = 'Selamat Pagi';
-                } elseif ($hour >= 12 && $hour < 18) {
-                    $greeting = 'Selamat Siang';
-                } else {
-                    $greeting = 'Selamat Malam';
-                }
-            @endphp
+    <div class="flex flex-row items-center justify-between space-y-0">
 
-            <p class="mt-1 font-inter text-base font-medium text-gray-600">✨ {{ $greeting }},
-                {{ auth()->user()->name }}</p>
-        </div>
-        <div class="flex flex-col space-x-4">
-            <p class="font-inter font-medium text-gray-600">{{ \Carbon\Carbon::now('Asia/Jakarta')->format('d F Y') }}
-            </p>
-            <button @click="openQrModal('{{ auth()->user()->qr_code_path }}', '{{ auth()->user()->id }}')"
-                class="rounded-md bg-blue-500 px-4 py-2 font-inter text-sm text-white shadow-md transition hover:bg-blue-600 hover:shadow-lg">
-                Tampilkan QR Presensi
-            </button>
-        </div>
+        @php
+            $hour = \Carbon\Carbon::now('Asia/Jakarta')->hour;
+            if ($hour >= 5 && $hour < 12) {
+                $greeting = 'Selamat Pagi';
+            } elseif ($hour >= 12 && $hour < 18) {
+                $greeting = 'Selamat Siang';
+            } else {
+                $greeting = 'Selamat Malam';
+            }
+        @endphp
+
+        <p class="mt-1 font-inter text-base font-medium text-gray-600">✨ {{ $greeting }},
+            {{ auth()->user()->name }}</p>
+        <p class="font-inter text-sm font-medium text-gray-600">
+            {{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y') }}
+        </p>
+
+
     </div>
 
     <!-- Navigation Tabs -->
@@ -129,7 +314,7 @@ new class extends Component {
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="size-6 text-blue-600">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Z" />
+                                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                         </svg>
                     </div>
                 </div>
@@ -158,6 +343,7 @@ new class extends Component {
                 <div class="flex flex-row items-center justify-between">
                     <p class="font-inter text-2xl font-medium">{{ $totalSubjectClassSessions }}</p>
                     <div class="rounded-full bg-purple-100 p-2">
+
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="size-6 text-purple-600">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -185,7 +371,7 @@ new class extends Component {
         </div>
 
         <!-- Jadwal Hari Ini -->
-        <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="mt-8 grid grid-cols-1 gap-0 md:gap-6 lg:grid-cols-3">
             <div class="col-span-2">
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-md font-inter font-semibold text-gray-800">Jadwal Hari Ini</h2>
@@ -256,7 +442,7 @@ new class extends Component {
                 </div>
                 @if ($hasClassesToday)
                     <div class="mt-2 flex flex-row justify-center">
-                        <a href="{{ route('classes.attendances') }}"
+                        <a href="{{ route('classes.attendances') }}" wire:navigate
                             class="mt-4 rounded-full bg-gray-400 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-gray-300">
                             Tambah Pertemuan +
                         </a>
@@ -265,27 +451,29 @@ new class extends Component {
             </div>
 
             <!-- Quick Links and Notes -->
-            <div class="space-y-6">
+            <div class="mt-5 space-y-6 sm:mt-0">
                 <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                     <h2 class="text-md mb-4 font-inter font-semibold text-gray-800">Aksi Cepat</h2>
                     <div class="space-y-3">
-                        <a href="{{ route('classes.attendances') }}"
-                            class="flex items-center space-x-3 rounded-md bg-blue-50 p-3 text-blue-700 transition hover:bg-blue-100">
+
+                        <button
+                            @click="openQrModal('{{ auth()->user()->qr_code_path }}', '{{ auth()->user()->id }}')"
+                            class="flex w-full items-center space-x-3 rounded-md bg-blue-50 p-3 font-inter text-blue-700 transition hover:bg-blue-100">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span>Buat Sesi Baru</span>
-                        </a>
+                            <span class="font-inter text-sm">Tampilkan QR Code</span>
+                        </button>
                         <a href="#"
-                            class="flex items-center space-x-3 rounded-md bg-purple-50 p-3 text-purple-700 transition hover:bg-purple-100">
+                            class="flex items-center space-x-3 rounded-md bg-purple-50 p-3 font-inter text-purple-700 transition hover:bg-purple-100">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                    d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span>Lihat Daftar Siswa</span>
+                            <span class="font-inter text-sm">Buat Sesi Baru</span>
                         </a>
                         <a href="#"
                             class="flex items-center space-x-3 rounded-md bg-green-50 p-3 text-green-700 transition hover:bg-green-100">
@@ -294,7 +482,7 @@ new class extends Component {
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                             </svg>
-                            <span>Unduh Laporan</span>
+                            <span class="font-inter text-sm">Unduh Laporan</span>
                         </a>
                     </div>
                 </div>
@@ -418,7 +606,8 @@ new class extends Component {
         </div>
 
         <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-            <div class="overflow-x-auto">
+            <!-- Tampilan untuk layar desktop -->
+            <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -526,6 +715,68 @@ new class extends Component {
                     </tbody>
                 </table>
             </div>
+
+            <!-- Tampilan untuk layar mobile -->
+            <div class="block md:hidden">
+                @forelse ($subjectClass as $class)
+                    <div class="border-b border-gray-200 p-4" href="{{ route('subject.detail', $class) }}">
+                        <div class="flex flex-row items-center justify-between">
+                            <div class="flex flex-row items-center">
+                                <div
+                                    class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-900">{{ $class->class_name }}</h3>
+                                    <div class="mt-1 flex flex-row items-center gap-1">
+                                        <span
+                                            class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                                            {{ $class->classes->major->name }}
+                                        </span>
+                                        <span
+                                            class="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                                            {{ $class->classes->name }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium uppercase text-gray-500">Jumlah Pertemuan</p>
+                                <p class="text-end text-sm text-gray-900">
+                                    {{ $subjectClassSessions->where('subject_class_id', $class->id)->count() }}
+                                </p>
+                            </div>
+                        </div>
+
+
+
+                        <div class="mt-4 flex justify-end">
+                            <a href="{{ route('subject.detail', $class) }}"
+                                class="text-sm font-medium text-blue-600 hover:text-blue-900">
+                                Lihat Detail
+                            </a>
+                        </div>
+                    </div>
+                @empty
+                    <div class="p-6 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="mx-auto h-10 w-10 text-gray-300">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data</h3>
+                        <p class="mt-1 text-sm text-gray-500">Anda belum memiliki kelas mata pelajaran.</p>
+                        <a href="{{ route('classes.attendances') }}"
+                            class="mt-3 inline-block rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                            Buat Kelas
+                        </a>
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 
@@ -547,8 +798,9 @@ new class extends Component {
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Tingkat Kehadiran</p>
-                            <p class="text-2xl font-bold text-gray-900">85%</p>
-                            <p class="mt-1 text-xs text-green-600">↑ 2% dari bulan lalu</p>
+                            <p class="text-2xl font-bold text-gray-900">
+                                {{ number_format($attendanceStats['total_attendance_rate'], 1) }}%</p>
+                            <p class="mt-1 text-xs text-green-600">Keseluruhan</p>
                         </div>
                     </div>
                 </div>
@@ -564,8 +816,9 @@ new class extends Component {
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Izin & Sakit</p>
-                            <p class="text-2xl font-bold text-gray-900">10%</p>
-                            <p class="mt-1 text-xs text-gray-500">± 0% dari bulan lalu</p>
+                            <p class="text-2xl font-bold text-gray-900">
+                                {{ number_format($attendanceStats['izin_sakit_rate'], 1) }}%</p>
+                            <p class="mt-1 text-xs text-gray-500">Dari Total Pertemuan</p>
                         </div>
                     </div>
                 </div>
@@ -580,8 +833,9 @@ new class extends Component {
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Tanpa Keterangan</p>
-                            <p class="text-2xl font-bold text-gray-900">5%</p>
-                            <p class="mt-1 text-xs text-red-600">↓ 2% dari bulan lalu</p>
+                            <p class="text-2xl font-bold text-gray-900">
+                                {{ number_format($attendanceStats['tanpa_keterangan_rate'], 1) }}%</p>
+                            <p class="mt-1 text-xs text-red-600">Dari Total Pertemuan</p>
                         </div>
                     </div>
                 </div>
@@ -597,7 +851,8 @@ new class extends Component {
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Siswa yang Perlu Perhatian</p>
-                            <p class="text-2xl font-bold text-gray-900">3</p>
+                            <p class="text-2xl font-bold text-gray-900">
+                                {{ $attendanceStats['students_needing_attention'] }}</p>
                             <p class="mt-1 text-xs text-gray-500">Kehadiran < 70%</p>
                         </div>
                     </div>
@@ -617,90 +872,102 @@ new class extends Component {
             <h2 class="mb-4 text-lg font-semibold text-gray-800">Perbandingan Kehadiran Antar Kelas</h2>
 
             <div class="overflow-hidden rounded-lg border border-gray-200">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Kelas</th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Tingkat Kehadiran</th>
-                            <th scope="col"
-                                class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                                Izin/Sakit</th>
-                            <th scope="col"
-                                class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                                Tanpa Keterangan</th>
-                            <th scope="col"
-                                class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                                Tren</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 bg-white">
-                        @foreach ($subjectClass->take(5) as $class)
+                @if (count($classAttendanceStats) > 0)
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                    {{ $class->classes->name }} - {{ $class->class_name }}
-                                </td>
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <div class="flex items-center">
-                                        <div class="w-full max-w-xs">
-                                            <div class="h-2.5 w-full rounded-full bg-gray-200">
-                                                @php $percentage = rand(75, 95); @endphp
-                                                <div class="h-2.5 rounded-full bg-green-600"
-                                                    style="width: {{ $percentage }}%"></div>
-                                            </div>
-                                        </div>
-                                        <span class="ml-3 text-sm text-gray-900">{{ $percentage }}%</span>
-                                    </div>
-                                </td>
-                                <td class="hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 sm:table-cell">
-                                    @php $izinSakit = $class->izin_sakit_percentage ?? 0; @endphp
-                                    {{ $izinSakit }}%
-                                </td>
-                                <td class="hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 sm:table-cell">
-                                    @php $tanpaKet = $class->tanpa_keterangan_percentage ?? 0; @endphp
-                                    {{ $tanpaKet }}%
-                                </td>
-                                <td class="hidden whitespace-nowrap px-6 py-4 text-sm sm:table-cell">
-                                    @php $trend = rand(-3, 3); @endphp
-                                    @if ($trend > 0)
-                                        <span class="inline-flex items-center text-green-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="mr-1 h-4 w-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                                            </svg>
-                                            +{{ $trend }}%
-                                        </span>
-                                    @elseif ($trend < 0)
-                                        <span class="inline-flex items-center text-red-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="mr-1 h-4 w-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l5.94-2.28m-5.94 2.28l-2.28 5.941" />
-                                            </svg>
-                                            {{ $trend }}%
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center text-gray-500">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="mr-1 h-4 w-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M18.75 7.5h-7.5A2.25 2.25 0 009 9.75v7.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25v-7.5A2.25 2.25 0 0018.75 7.5z" />
-                                            </svg>
-                                            0%
-                                        </span>
-                                    @endif
-                                </td>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    Kelas</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    Tingkat Kehadiran</th>
+                                <th scope="col"
+                                    class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                                    Izin/Sakit</th>
+                                <th scope="col"
+                                    class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                                    Tanpa Keterangan</th>
+                                <th scope="col"
+                                    class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                                    Tren</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            @foreach ($classAttendanceStats as $class)
+                                <tr>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                                        {{ $class['class_name'] }} - {{ $class['name'] }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <div class="flex items-center">
+                                            <div class="w-full max-w-xs">
+                                                <div class="h-2.5 w-full rounded-full bg-gray-200">
+                                                    <div class="h-2.5 rounded-full bg-green-600"
+                                                        style="width: {{ $class['attendance_rate'] }}%"></div>
+                                                </div>
+                                            </div>
+                                            <span
+                                                class="ml-3 text-sm text-gray-900">{{ $class['attendance_rate'] }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 sm:table-cell">
+                                        {{ $class['izin_sakit_rate'] }}%
+                                    </td>
+                                    <td class="hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 sm:table-cell">
+                                        {{ $class['tanpa_keterangan_rate'] }}%
+                                    </td>
+                                    <td class="hidden whitespace-nowrap px-6 py-4 text-sm sm:table-cell">
+                                        @if ($class['trend'] > 0)
+                                            <span class="inline-flex items-center text-green-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-1 h-4 w-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                                                </svg>
+                                                +{{ $class['trend'] }}%
+                                            </span>
+                                        @elseif($class['trend'] < 0)
+                                            <span class="inline-flex items-center text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-1 h-4 w-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l5.94-2.28m-5.94 2.28l-2.28 5.941" />
+                                                </svg>
+                                                {{ $class['trend'] }}%
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center text-gray-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-1 h-4 w-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M18.75 7.5h-7.5A2.25 2.25 0 009 9.75v7.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25v-7.5A2.25 2.25 0 0018.75 7.5z" />
+                                                </svg>
+                                                0%
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @else
+                    <div class="flex flex-col items-center justify-center p-8 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="h-12 w-12 text-gray-300">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada data perbandingan kelas</h3>
+                        <p class="mt-1 text-sm text-gray-500">Data akan muncul setelah Anda memiliki pertemuan kelas
+                            dengan presensi.</p>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -753,37 +1020,202 @@ new class extends Component {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('attendance-chart').getContext('2d');
-            const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
-            const data = {
-                labels: labels,
-                datasets: [{
-                    label: 'Attendance Rate',
-                    data: [65, 59, 80, 81, 56, 55, 40],
-                    fill: false,
-                    borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.1
-                }]
-            };
+            // Pastikan element canvas ada sebelum mencoba membuat chart
+            const canvas = document.getElementById('attendance-chart');
+            if (!canvas) return;
 
-            const config = {
-                type: 'line',
-                data: data,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false,
+            const ctx = canvas.getContext('2d');
+
+            // Fungsi untuk memformat tanggal tanpa memerlukan moment.js
+            function formatMonthYear(dateString) {
+                const date = new Date(dateString);
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+                    "Dec"
+                ];
+                return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+            }
+
+            // Fungsi untuk mendapatkan key bulan tanpa moment.js
+            function getMonthKey(dateString) {
+                const date = new Date(dateString);
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            }
+
+            // Fungsi untuk mengumpulkan data kehadiran per bulan
+            function processAttendanceData(sessions, attendances) {
+                // Kelompokkan data berdasarkan bulan
+                const monthlyData = {};
+
+                sessions.forEach(session => {
+                    const monthKey = getMonthKey(session.class_date);
+
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = {
+                            hadir: 0,
+                            tidak_hadir: 0,
+                            sakit: 0,
+                            izin: 0,
+                            total: 0
+                        };
+                    }
+
+                    // Cari attendances untuk session ini
+                    const sessionAttendances = attendances.filter(att =>
+                        att.subject_class_session_id === session.id
+                    );
+
+                    sessionAttendances.forEach(att => {
+                        monthlyData[monthKey].total++;
+
+                        if (att.status === 'hadir') {
+                            monthlyData[monthKey].hadir++;
+                        } else if (att.status === 'tidak_hadir') {
+                            monthlyData[monthKey].tidak_hadir++;
+                        } else if (att.status === 'sakit') {
+                            monthlyData[monthKey].sakit++;
+                        } else if (att.status === 'izin') {
+                            monthlyData[monthKey].izin++;
+                        }
+                    });
+                });
+
+                return monthlyData;
+            }
+
+            try {
+                // Ambil data dari backend
+                const sessions = @json($subjectClassSessions);
+                const attendances = @json($studentAttendances);
+
+                // Pastikan bahwa keduanya adalah array
+                if (!Array.isArray(sessions) || !Array.isArray(attendances)) {
+                    console.error('Data sessions atau attendances tidak valid');
+                    return;
+                }
+
+                // Jika array kosong, tampilkan chart kosong dengan pesan
+                if (sessions.length === 0 || attendances.length === 0) {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Belum ada data'],
+                            datasets: [{
+                                label: 'Belum ada data kehadiran',
+                                data: [0],
+                                backgroundColor: 'rgba(200, 200, 200, 0.6)'
+                            }]
                         },
-                        title: {
-                            display: false,
+                        options: {
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Belum ada data kehadiran untuk ditampilkan'
+                                }
+                            }
+                        }
+                    });
+                    return;
+                }
 
+                // Proses data kehadiran
+                const monthlyAttendance = processAttendanceData(sessions, attendances);
+
+                // Siapkan data untuk chart
+                const labels = Object.keys(monthlyAttendance).sort();
+                const hadir = labels.map(month => monthlyAttendance[month].hadir);
+                const tidakHadir = labels.map(month => monthlyAttendance[month].tidak_hadir);
+                const sakit = labels.map(month => monthlyAttendance[month].sakit);
+                const izin = labels.map(month => monthlyAttendance[month].izin);
+
+                // Konfigurasi chart
+                const config = {
+                    type: 'bar',
+                    data: {
+                        labels: labels.map(month => formatMonthYear(month + '-01')),
+                        datasets: [{
+                                label: 'Hadir',
+                                data: hadir,
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Tidak Hadir',
+                                data: tidakHadir,
+                                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Sakit',
+                                data: sakit,
+                                backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                                borderColor: 'rgba(255, 206, 86, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Izin',
+                                data: izin,
+                                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Statistik Kehadiran Bulanan'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        const value = context.parsed.y || 0;
+                                        const monthKey = labels[context.dataIndex];
+                                        const totalMonth = monthlyAttendance[monthKey]?.total || 1;
+                                        const percentage = ((value / totalMonth) * 100).toFixed(1);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true,
+                                title: {
+                                    display: true,
+                                    text: 'Bulan'
+                                }
+                            },
+                            y: {
+                                stacked: true,
+                                title: {
+                                    display: true,
+                                    text: 'Jumlah Siswa'
+                                },
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            };
+                };
 
-            new Chart(ctx, config);
+                // Inisialisasi chart
+                new Chart(ctx, config);
+            } catch (error) {
+                console.error('Error saat membuat chart:', error);
+                // Tampilkan pesan error pada canvas
+                ctx.font = '14px Arial';
+                ctx.fillStyle = 'red';
+                ctx.fillText('Terjadi kesalahan saat memuat grafik', 10, 50);
+            }
         });
     </script>
+
 </div>

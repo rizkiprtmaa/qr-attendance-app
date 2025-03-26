@@ -53,4 +53,9 @@ class SubjectClassSession extends Model
 
         return $counts;
     }
+
+    public function subjectClassAttendances()
+    {
+        return $this->hasMany(SubjectClassAttendance::class);
+    }
 }

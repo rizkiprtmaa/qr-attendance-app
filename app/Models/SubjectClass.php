@@ -13,6 +13,17 @@ class SubjectClass extends Model
         return $this->belongsTo(Classes::class);
     }
 
+    // Define the relationship with SubjectClassSession
+    public function subjectClassSessions()
+    {
+        return $this->hasMany(SubjectClassSession::class, 'subject_class_id');
+    }
+
+    public function major()
+    {
+        return $this->belongsTo(Major::class);
+    }
+
     // Guru utama
     public function mainTeacher()
     {

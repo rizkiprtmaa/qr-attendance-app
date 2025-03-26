@@ -453,14 +453,18 @@ new #[Layout('layouts.app')] class extends Component {
                                             {{ \Carbon\Carbon::parse($session['class_date'])->format('d M Y') }}
                                         </div>
                                     </div>
-                                    <div class="flex flex-col space-y-1">
+                                    <div class="flex flex-col space-y-1 text-end">
                                         <div class="text-xs font-medium uppercase text-gray-500">Waktu</div>
-                                        <div class="flex items-center text-sm text-gray-700">
+                                        <div class="flex items-center justify-end text-end text-sm text-gray-700">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="mr-1.5 h-4 w-4 text-gray-400">
+                                                class="mr-1.5 size-4 h-4 w-4 text-gray-400">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0" />
+                                                    d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                            </svg>
+
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0" />
                                             </svg>
                                             {{ \Carbon\Carbon::parse($session['start_time'])->format('H:i') }} -
                                             {{ \Carbon\Carbon::parse($session['end_time'])->format('H:i') }}
@@ -577,16 +581,12 @@ new #[Layout('layouts.app')] class extends Component {
                         <div class="mb-4">
                             <label for="classDate" class="block text-sm font-medium text-gray-700">Tanggal
                                 Pertemuan</label>
-                            <div class="relative mt-1 rounded-md shadow-sm">
+                            <div class="relative mt-1 w-full rounded-md shadow-sm">
                                 <input wire:model="classDate" type="date"
-                                    class="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                 <div
                                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                    </svg>
+
                                 </div>
                             </div>
                             @error('classDate')
@@ -597,14 +597,10 @@ new #[Layout('layouts.app')] class extends Component {
                             <label for="startTime" class="block text-sm font-medium text-gray-700">Jam Mulai</label>
                             <div class="relative mt-1 rounded-md shadow-sm">
                                 <input wire:model="startTime" type="time"
-                                    class="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                 <div
                                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+
                                 </div>
                             </div>
                             @error('startTime')
@@ -615,14 +611,10 @@ new #[Layout('layouts.app')] class extends Component {
                             <label for="endTime" class="block text-sm font-medium text-gray-700">Jam Selesai</label>
                             <div class="relative mt-1 rounded-md shadow-sm">
                                 <input wire:model="endTime" type="time"
-                                    class="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                 <div
                                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+
                                 </div>
                             </div>
                             @error('endTime')
@@ -682,14 +674,11 @@ new #[Layout('layouts.app')] class extends Component {
                                 Pertemuan</label>
                             <div class="relative mt-1 rounded-md shadow-sm">
                                 <input wire:model="editClassDate" type="date"
-                                    class="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                                    style="appearance: none; -webkit-appearance: none; -moz-appearance: none;"
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                 <div
                                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                    </svg>
+
                                 </div>
                             </div>
                             @error('editClassDate')
@@ -701,14 +690,10 @@ new #[Layout('layouts.app')] class extends Component {
                                 Mulai</label>
                             <div class="relative mt-1 rounded-md shadow-sm">
                                 <input wire:model="editStartTime" type="time"
-                                    class="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                 <div
                                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+
                                 </div>
                             </div>
                             @error('editStartTime')
@@ -720,14 +705,10 @@ new #[Layout('layouts.app')] class extends Component {
                                 Selesai</label>
                             <div class="relative mt-1 rounded-md shadow-sm">
                                 <input wire:model="editEndTime" type="time"
-                                    class="block w-full rounded-md border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
                                 <div
                                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+
                                 </div>
                             </div>
                             @error('editEndTime')
