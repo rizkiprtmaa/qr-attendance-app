@@ -282,7 +282,7 @@ new class extends Component {
 }">
     <div class="flex justify-end md:justify-start">
         <button @click="showCreateClasses = true" type="button"
-            class="rounded-md bg-blue-500 px-4 py-2 font-inter text-sm text-white hover:bg-blue-700">Buat
+            class="rounded-full bg-blue-600 px-4 py-2 font-inter text-sm text-white shadow-md hover:bg-blue-700">Buat
             Kelas</button>
     </div>
 
@@ -371,11 +371,11 @@ new class extends Component {
         </div>
 
         <!-- Header Filters -->
-        <div class="mb-4 flex items-center justify-between text-sm">
-            <div class="flex space-x-4">
+        <div class="mb-4 flex flex-col items-center justify-between text-sm md:flex-row">
+            <div class="flex space-x-5">
                 <button x-on:click="$wire.sortColumnBy('created_at')" class="flex items-center"
                     :class="{
-                        'font-medium text-blue-600': '{{ $sortBy }}'
+                        'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full': '{{ $sortBy }}'
                         === 'created_at',
                         'text-gray-500 hover:text-gray-700': '{{ $sortBy }}'
                         !== 'created_at'
@@ -383,18 +383,16 @@ new class extends Component {
                     Terbaru
                     @if ($sortBy === 'created_at')
                         @if ($sortDirection === 'desc')
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M12.53 16.28a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 011.06-1.06L12 14.69l6.97-6.97a.75.75 0 111.06 1.06l-7.5 7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.75 17.25 12 21m0 0-3.75-3.75M12 21V3" />
                             </svg>
                         @else
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M11.47 7.72a.75.75 0 011.06 0l7.5 7.5a.75.75 0 11-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 01-1.06-1.06l7.5-7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
                     @endif
@@ -402,7 +400,7 @@ new class extends Component {
 
                 <button wire:click="sortColumnBy('class_name')" class="flex items-center"
                     :class="{
-                        'font-medium text-blue-600': '{{ $sortBy }}'
+                        'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full': '{{ $sortBy }}'
                         === 'class_name',
                         'text-gray-500 hover:text-gray-700': '{{ $sortBy }}'
                         !== 'class_name'
@@ -410,18 +408,16 @@ new class extends Component {
                     Nama Kelas
                     @if ($sortBy === 'class_name')
                         @if ($sortDirection === 'asc')
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M11.47 7.72a.75.75 0 011.06 0l7.5 7.5a.75.75 0 11-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 01-1.06-1.06l7.5-7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.75 17.25 12 21m0 0-3.75-3.75M12 21V3" />
                             </svg>
                         @else
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M12.53 16.28a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 011.06-1.06L12 14.69l6.97-6.97a.75.75 0 111.06 1.06l-7.5 7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
                     @endif
@@ -430,7 +426,7 @@ new class extends Component {
                 <!-- Tambahkan opsi sortir lainnya seperti kelas dan jurusan -->
                 <button wire:click="sortColumnBy('class')" class="flex items-center"
                     :class="{
-                        'font-medium text-blue-600': '{{ $sortBy }}'
+                        'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full': '{{ $sortBy }}'
                         === 'class',
                         'text-gray-500 hover:text-gray-700': '{{ $sortBy }}'
                         !== 'class'
@@ -438,18 +434,16 @@ new class extends Component {
                     Kelas
                     @if ($sortBy === 'class')
                         @if ($sortDirection === 'asc')
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M11.47 7.72a.75.75 0 011.06 0l7.5 7.5a.75.75 0 11-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 01-1.06-1.06l7.5-7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.75 17.25 12 21m0 0-3.75-3.75M12 21V3" />
                             </svg>
                         @else
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M12.53 16.28a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 011.06-1.06L12 14.69l6.97-6.97a.75.75 0 111.06 1.06l-7.5 7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
                     @endif
@@ -457,7 +451,7 @@ new class extends Component {
 
                 <button wire:click="sortColumnBy('major')" class="flex items-center"
                     :class="{
-                        'font-medium text-blue-600': '{{ $sortBy }}'
+                        'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full': '{{ $sortBy }}'
                         === 'major',
                         'text-gray-500 hover:text-gray-700': '{{ $sortBy }}'
                         !== 'major'
@@ -465,29 +459,27 @@ new class extends Component {
                     Jurusan
                     @if ($sortBy === 'major')
                         @if ($sortDirection === 'asc')
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M11.47 7.72a.75.75 0 011.06 0l7.5 7.5a.75.75 0 11-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 01-1.06-1.06l7.5-7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15.75 17.25 12 21m0 0-3.75-3.75M12 21V3" />
                             </svg>
                         @else
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="ml-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M12.53 16.28a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 011.06-1.06L12 14.69l6.97-6.97a.75.75 0 111.06 1.06l-7.5 7.5z"
-                                    clip-rule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
                     @endif
                 </button>
             </div>
 
-            <div class="relative text-gray-500">
+            <div class="item-center relative mt-4 text-gray-500 md:mt-0">
                 <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari kelas..."
-                    class="rounded-md border border-gray-300 px-3 py-1 pl-8 text-sm" />
+                    class="w-64 rounded-full border border-gray-300 px-4 py-2 pl-8 text-sm" />
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="absolute left-2 top-1.5 h-4 w-4">
+                    stroke="currentColor" class="absolute left-3 top-3 h-4 w-4">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
@@ -498,21 +490,22 @@ new class extends Component {
         <div class="rounded-lg border border-gray-200 bg-white shadow">
             <!-- Table Header -->
             <div
-                class="grid grid-cols-12 border-b border-gray-200 bg-gray-50 py-4 text-xs font-medium uppercase tracking-wider text-gray-500">
-                <div class="col-span-3 px-6">Mata Pelajaran</div>
-                <div class="col-span-2 px-3 text-center">Kelas</div>
-                <div class="col-span-2 px-3 text-center">Jurusan</div>
-                <div class="col-span-2 px-3 text-center">Jumlah Siswa</div>
-                <div class="col-span-2 px-3 text-center">Pertemuan</div>
-                <div class="col-span-1 px-3"></div>
+                class="grid grid-cols-4 border-b border-gray-200 bg-gray-50 py-4 text-xs font-medium uppercase tracking-wider text-gray-500 md:grid-cols-12">
+                <div class="col-span-2 px-6 md:col-span-3">Mata Pelajaran</div>
+                <div class="col-span-2 hidden px-3 text-center md:block">Kelas</div>
+                <div class="col-span-1 px-1 text-center md:col-span-2 md:px-3">Jurusan</div>
+                <div class="col-span-2 hidden px-1 text-center md:block md:px-3">Jumlah Siswa</div>
+                <div class="col-span-2 hidden px-1 text-center md:block md:px-3">Pertemuan</div>
+                <div class="col-span-1 px-1 text-center md:px-3"></div>
             </div>
 
             <!-- Table Body -->
             @if ($subjectClasses->count() > 0)
                 @foreach ($subjectClasses as $subjectClass)
-                    <div class="grid grid-cols-12 items-center border-b border-gray-200 hover:bg-gray-50">
+                    <div
+                        class="grid grid-cols-4 items-center border-b border-gray-200 hover:bg-gray-50 md:grid-cols-12">
                         <!-- Subject Info -->
-                        <div class="col-span-3 px-6 py-4">
+                        <div class="col-span-2 px-6 py-4 md:col-span-3">
                             <div class="flex items-center">
                                 <div
                                     class="mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
@@ -523,14 +516,21 @@ new class extends Component {
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-gray-900">{{ $subjectClass->class_name }}</div>
-                                    <div class="text-xs text-gray-500">{{ $subjectClass->class_code }}</div>
+                                    <div class="text-sm font-medium text-gray-900"><a
+                                            href="{{ route('subject.detail', $subjectClass) }}"
+                                            wire:navigate>{{ $subjectClass->class_name }}</a></div>
+                                    <div class="md:blocktext-xs hidden text-gray-500">{{ $subjectClass->class_code }}
+                                    </div>
+                                    <div class="flex md:hidden"><span
+                                            class="rounded-md bg-blue-200 px-2 py-1 text-[0.625rem] text-blue-600">{{ $subjectClass->classes->name }}</span>
+                                        <span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Class Info -->
-                        <div class="col-span-2 px-3 py-4">
+                        <div class="col-span-2 hidden px-3 py-4 md:block">
                             <div class="flex items-center justify-center">
                                 <div class="rounded-md bg-blue-200 px-2 py-1 text-xs text-blue-600">
                                     {{ $subjectClass->classes->name }}
@@ -539,16 +539,17 @@ new class extends Component {
                         </div>
 
                         <!-- Major Info -->
-                        <div class="col-span-2 px-3 py-4">
+                        <div class="col-span-1 px-1 py-4 md:col-span-2 md:px-3">
                             <div class="flex items-center justify-center">
-                                <div class="rounded-md bg-green-200 px-2 py-1 text-xs text-green-600">
+                                <div
+                                    class="rounded-md bg-green-200 px-2 py-1 text-center text-[0.625rem] text-green-600 md:text-xs">
                                     {{ $subjectClass->classes->major->name }}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Student Count -->
-                        <div class="col-span-2 px-3 py-4">
+                        <div class="col-span-1 hidden px-1 py-4 md:col-span-2 md:block md:px-3">
                             <div class="flex items-center justify-center">
 
                                 <span
@@ -557,7 +558,7 @@ new class extends Component {
                         </div>
 
                         <!-- Meetings Count -->
-                        <div class="col-span-2 px-3 py-4">
+                        <div class="col-span-1 hidden px-0 py-4 md:col-span-2 md:block md:px-3">
                             <div class="flex items-center justify-center">
 
                                 @php
@@ -587,7 +588,7 @@ new class extends Component {
                                 <div x-cloak x-show="sessionMenuOpen === {{ $subjectClass->id }}"
                                     :class="{
                                         'right-0 left-auto': window.innerWidth > 640,
-                                        'right-auto left-0': window
+                                        'right-0 left-auto': window
                                             .innerWidth <= 640
                                     }"
                                     @click.away="sessionMenuOpen = null"

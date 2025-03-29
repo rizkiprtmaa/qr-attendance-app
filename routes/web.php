@@ -77,6 +77,13 @@ Volt::route('classes-attendances/{subjectClass}/detail', 'teacher.detail-subject
 Volt::route('/session/{session}/attendance', 'teacher.subject-class-attendance')->middleware(['auth', 'verified', 'role:teacher'])
     ->name('session.attendance');
 
+Route::get('/attendance/{session}/pdf', [App\Http\Controllers\AttendancePdfController::class, 'downloadAttendancePdf'])
+    ->middleware(['auth'])
+    ->name('attendance.pdf');
+
+Route::view('permission-submission', 'teacher.permission')->middleware(['auth', 'verified', 'role:teacher|student'])->name('permission-submission');
+Route::view('permission-management', 'admin.permission-submission.index')->middleware(['auth', 'verified', 'role:admin'])->name('permission-management');
+
 
 
 

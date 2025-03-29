@@ -12,11 +12,14 @@
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
 
 
-            @if (Auth::user()->role == 'admin')
+            @role('admin')
                 <livewire:admin.dashboard />
-            @else
+            @endrole
+            @role('teacher')
                 <livewire:teacher.dashboard />
-            @endif
+            @endrole
+
+
 
 
         </div>

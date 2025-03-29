@@ -48,7 +48,7 @@ new #[Layout('layouts.app')] class extends Component {
 
         // Apply search filter if provided
         if (!empty($this->search)) {
-            $query->whereHas('student', function ($q) {
+            $query->whereHas('student.user', function ($q) {
                 $q->where('name', 'like', '%' . $this->search . '%')->orWhere('student_id', 'like', '%' . $this->search . '%');
             });
         }
@@ -138,7 +138,7 @@ new #[Layout('layouts.app')] class extends Component {
                         <p class="font-inter text-sm text-gray-600">Kelola absensi siswa pada pertemuan ini</p>
                     </div>
                     <a href="{{ route('subject.detail', $subjectClassId) }}" wire:navigate
-                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                        class="inline-flex items-center rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="mr-2 h-4 w-4">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -214,7 +214,7 @@ new #[Layout('layouts.app')] class extends Component {
                             </svg>
                             {{ \Carbon\Carbon::parse($classDate)->locale('id')->translatedFormat('l, d F Y') }}
                         </p>
-                        <p class="flex items-center text-sm text-gray-500">
+                        <p class="mt-1 flex items-center text-sm text-gray-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor"
                                 class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400">
@@ -284,7 +284,7 @@ new #[Layout('layouts.app')] class extends Component {
             <div class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <!-- Search and Filter -->
                 <div class="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-                    <div class="relative rounded-md shadow-sm">
+                    <div class="relative rounded-full shadow-sm">
                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-gray-400">
@@ -294,11 +294,11 @@ new #[Layout('layouts.app')] class extends Component {
                         </div>
                         <input type="text" wire:model.live.debounce.300ms="search"
                             placeholder="Cari nama siswa..."
-                            class="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            class="block w-full rounded-full border-gray-300 pl-10 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
 
                     <select wire:model.live="statusFilter"
-                        class="block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm">
+                        class="block rounded-full border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500">
                         <option value="">Semua Status</option>
                         <option value="hadir">Hadir</option>
                         <option value="tidak_hadir">Tidak Hadir</option>
@@ -308,9 +308,18 @@ new #[Layout('layouts.app')] class extends Component {
                 </div>
 
                 <!-- Bulk Actions -->
-                <div x-data="{ open: false }" class="relative">
+                <div x-data="{ open: false }" class="flex items-center gap-3">
+                    <a href="{{ route('attendance.pdf', $sessionId) }}" target="_blank"
+                        class="inline-flex items-center rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:bg-green-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="mr-2 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Unduh PDF
+                    </a>
                     <button @click="open = !open" type="button"
-                        class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                        class="inline-flex justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                         Tindakan Massal
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                             stroke-width="1.5" stroke="currentColor" class="-mr-1 ml-2 h-5 w-5">

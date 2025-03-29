@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->date('attendance_date');
             $table->enum('type', ['datang', 'pulang']);
-            $table->enum('status', ['hadir', 'terlambat', 'pulang_cepat', 'izin'])->default('hadir');
+            $table->enum('status', ['hadir', 'terlambat', 'pulang_cepat', 'izin', 'sakit', 'tidak_hadir'])->default('tidak_hadir');
             $table->time('check_in_time')->nullable();
             $table->time('check_out_time')->nullable(); // Tambahkan kolom check_out_time
             $table->timestamps();

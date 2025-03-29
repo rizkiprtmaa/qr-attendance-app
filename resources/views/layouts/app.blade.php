@@ -26,6 +26,26 @@
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
+    <style>
+        /* Memastikan dropdown menu selalu terlihat */
+        [x-cloak] {
+            display: none !important;
+        }
+
+        /* Prioritaskan z-index dropdown */
+        .z-50 {
+            z-index: 50 !important;
+        }
+
+        /* Perbaikan posisi dropdown di mobile */
+        @media (max-width: 768px) {
+            .origin-top-right.right-0 {
+                right: 0 !important;
+                left: auto !important;
+            }
+        }
+    </style>
+
     @livewireStyles
     @fluxAppearance
 </head>

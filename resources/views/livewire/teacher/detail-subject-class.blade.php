@@ -8,8 +8,11 @@ use App\Models\Classes;
 use App\Models\Student;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Rule;
+use Livewire\WithPagination;
 
 new #[Layout('layouts.app')] class extends Component {
+    use WithPagination;
+
     public $subjectClass;
     public $subjectClassId;
     public $subjectName;
@@ -18,7 +21,7 @@ new #[Layout('layouts.app')] class extends Component {
     public $major;
     public $classesId;
 
-    // form
+    // Form fields
     #[Rule('required', message: 'Judul pertemuan harus diisi')]
     public $subjectTitle;
 
@@ -31,15 +34,24 @@ new #[Layout('layouts.app')] class extends Component {
     #[Rule('required', message: 'Jam selesai harus diisi')]
     public $endTime;
 
-    // form edit
+    // Form edit
     public $editSessionId;
     public $editSubjectTitle;
     public $editClassDate;
     public $editStartTime;
     public $editEndTime;
 
-    // store sessions
+    // Store sessions
     public $sessions = [];
+
+    // Search and filter
+    public $search = '';
+    public $dateFilter = '';
+    public $statusFilter = '';
+
+    // Sorting
+    public $sortField = 'class_date';
+    public $sortDirection = 'desc';
 
     public function mount(SubjectClass $subjectClass)
     {
@@ -52,13 +64,12 @@ new #[Layout('layouts.app')] class extends Component {
         $this->major = $subjectClass->classes->major->name;
         $this->classesId = $subjectClass->classes->id;
 
+        // Pastikan properti default untuk search dan filter sudah diinisialisasi
+        $this->search = '';
+        $this->dateFilter = '';
+
         // Load existing sessions
         $this->loadSessions();
-    }
-
-    public function loadSessions()
-    {
-        $this->sessions = SubjectClassSession::where('subject_class_id', $this->subjectClassId)->orderBy('class_date', 'desc')->orderBy('start_time', 'desc')->get()->toArray();
     }
 
     public function createSession()
@@ -68,6 +79,7 @@ new #[Layout('layouts.app')] class extends Component {
         try {
             // Format class date with the start time to create a proper datetime
             $classDateTime = \Carbon\Carbon::parse($this->classDate . ' ' . $this->startTime);
+            $sessionDate = $classDateTime->toDateString();
 
             // Create the session
             $session = SubjectClassSession::create([
@@ -85,12 +97,26 @@ new #[Layout('layouts.app')] class extends Component {
 
             // Create attendance records for each student in this session
             foreach ($students as $student) {
-                SubjectClassAttendance::create([
-                    'subject_class_session_id' => $session->id,
-                    'student_id' => $student->id,
-                    'status' => 'tidak_hadir', // Default status
-                    'check_in_time' => null,
-                ]);
+                // Check if student has approved permission for this date
+                $permissionExists = \App\Models\PermissionSubmission::where('user_id', $student->user_id)->whereDate('permission_date', $sessionDate)->where('status', 'approved')->first();
+
+                if ($permissionExists) {
+                    // Jika siswa memiliki izin yang disetujui, atur status sesuai tipe izin (izin/sakit)
+                    SubjectClassAttendance::create([
+                        'subject_class_session_id' => $session->id,
+                        'student_id' => $student->id,
+                        'status' => $permissionExists->type, // 'izin' or 'sakit'
+                        'check_in_time' => $classDateTime,
+                    ]);
+                } else {
+                    // Jika tidak ada izin, set default status 'tidak_hadir'
+                    SubjectClassAttendance::create([
+                        'subject_class_session_id' => $session->id,
+                        'student_id' => $student->id,
+                        'status' => 'tidak_hadir', // Default status
+                        'check_in_time' => null,
+                    ]);
+                }
             }
 
             // Reset form fields
@@ -100,9 +126,9 @@ new #[Layout('layouts.app')] class extends Component {
             $this->loadSessions();
 
             // Show success message
-            session()->flash('success', 'Sesi pertemuan berhasil dibuat');
+            $this->dispatch('show-toast', type: 'success', message: 'Sesi pertemuan berhasil dibuat');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal membuat sesi pertemuan: ' . $e->getMessage());
+            $this->dispatch('show-toast', type: 'error', message: 'Gagal membuat sesi pertemuan: ' . $e->getMessage());
         }
     }
 
@@ -193,6 +219,57 @@ new #[Layout('layouts.app')] class extends Component {
         }
     }
 
+    public function loadSessions()
+    {
+        $query = SubjectClassSession::where('subject_class_id', $this->subjectClassId);
+
+        // Apply search filter
+        if (!empty($this->search)) {
+            $query->where('subject_title', 'like', '%' . $this->search . '%');
+        }
+
+        // Apply date filter
+        if (!empty($this->dateFilter)) {
+            $query->whereDate('class_date', $this->dateFilter);
+        }
+
+        // Apply sorting
+        $query->orderBy($this->sortField, $this->sortDirection);
+
+        $this->sessions = $query->get()->toArray();
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->loadSessions();
+    }
+
+    public function updatedSearch()
+    {
+        $this->loadSessions();
+    }
+
+    public function updatedDateFilter()
+    {
+        $this->loadSessions();
+    }
+
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->dateFilter = '';
+        $this->loadSessions();
+    }
+
+    // Existing methods...
+
     public function render(): mixed
     {
         // Get students count for the current class
@@ -207,7 +284,7 @@ new #[Layout('layouts.app')] class extends Component {
         foreach ($sessionsQuery->get() as $session) {
             $start = \Carbon\Carbon::parse($session->start_time);
             $end = \Carbon\Carbon::parse($session->end_time);
-            $totalHours += $start->diffInHours($end); // Pastikan urutan parameter benar
+            $totalHours += $start->diffInHours($end);
         }
 
         $totalHours = number_format($totalHours, 2, '.', '');
@@ -228,6 +305,31 @@ new #[Layout('layouts.app')] class extends Component {
     sessionMenuOpen: null,
     toggleMenu(id) {
         this.sessionMenuOpen = this.sessionMenuOpen === id ? null : id;
+    },
+    init() {
+        this.$watch('deleteSessionModal', value => {
+            if (!value) document.body.classList.remove('overflow-hidden');
+            else document.body.classList.add('overflow-hidden');
+        });
+
+        this.$watch('editSessionModal', value => {
+            if (!value) document.body.classList.remove('overflow-hidden');
+            else document.body.classList.add('overflow-hidden');
+        });
+
+        this.$watch('createSessionModal', value => {
+            if (!value) document.body.classList.remove('overflow-hidden');
+            else document.body.classList.add('overflow-hidden');
+        });
+
+        // Listen to custom events
+        window.addEventListener('open-edit-modal', () => {
+            this.editSessionModal = true;
+        });
+
+        window.addEventListener('open-delete-modal', () => {
+            this.deleteSessionModal = true;
+        });
     }
 }">
     <div class="mt-10 w-full md:mt-0">
@@ -289,14 +391,14 @@ new #[Layout('layouts.app')] class extends Component {
 
     <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
         <!-- Header Card -->
-        <div class="flex w-full flex-col items-center justify-between rounded-lg bg-white p-6 shadow-md md:flex-row">
-            <div class="flex w-full flex-row justify-between gap-2 md:max-w-[10rem] md:flex-col">
+        <div class="flex w-full flex-col justify-between rounded-lg bg-white p-6 shadow-md md:flex-row md:items-center">
+            <div class="flex flex-row justify-between gap-2 md:flex-col">
                 <div class="flex flex-col">
                     <p class="flex flex-col font-inter text-xl font-medium">{{ $subjectName }}</p>
                     <p class="text-sm text-gray-500">{{ $subjectCode }}</p>
                 </div>
                 <span
-                    class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                    class="inline-flex items-center rounded-full bg-blue-100 px-3 py-0 text-sm font-medium text-blue-800 md:py-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-4 w-4">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -359,7 +461,7 @@ new #[Layout('layouts.app')] class extends Component {
         <!-- Action Button -->
         <div class="mt-5 flex justify-end md:justify-start">
             <button @click="createSessionModal = true"
-                class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700">
+                class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                     stroke="currentColor" class="mr-2 h-5 w-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -368,82 +470,319 @@ new #[Layout('layouts.app')] class extends Component {
             </button>
         </div>
 
-        <!-- Sessions List -->
+        <!-- Sessions List as Table -->
         <div class="mt-6">
-            <div class="mb-4 flex items-center justify-between">
+            <div class="mb-4 flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <h3 class="font-inter text-lg font-medium text-gray-800">Daftar Pertemuan</h3>
                 <div class="text-sm text-gray-500">Total: {{ count($sessions) }} pertemuan</div>
             </div>
 
+            <!-- Search and Filters -->
+            <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div class="flex rounded-md shadow-sm">
+                    <div class="relative flex flex-grow items-stretch">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-gray-400">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
+                        </div>
+                        <input wire:model.live.debounce.300ms="search" type="text"
+                            placeholder="Cari judul pertemuan..."
+                            class="block w-full rounded-full border-gray-300 pl-10 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="hidden md:block">
+                    <label for="dateFilter" class="sr-only block text-sm font-medium text-gray-700">Filter
+                        Tanggal</label>
+                    <div class="relative">
+
+                        <input wire:model.live.debounce.500ms="dateFilter" type="date"
+                            class="block rounded-full border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="flex flex-row justify-between md:justify-end">
+                    <div class="flex md:hidden">
+                        <label for="dateFilter" class="sr-only block text-sm font-medium text-gray-700">Filter
+                            Tanggal</label>
+                        <div class="relative">
+
+                            <input wire:model.live.debounce.500ms="dateFilter" type="date"
+                                class="block rounded-full border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button wire:click="clearFilters"
+                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="mr-2 h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Reset Filter
+                    </button>
+                </div>
+            </div>
+
             @if (count($sessions) > 0)
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Table for desktop view -->
+                <div class="hidden rounded-lg border border-gray-200 shadow-sm md:block">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <div class="flex cursor-pointer items-center"
+                                        wire:click="sortBy('subject_title')">
+                                        Judul Pertemuan
+                                        @if ($sortField === 'subject_title')
+                                            @if ($sortDirection === 'asc')
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M5 15l7-7 7 7" />
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <div class="flex cursor-pointer items-center" wire:click="sortBy('class_date')">
+                                        Tanggal
+                                        @if ($sortField === 'class_date')
+                                            @if ($sortDirection === 'asc')
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M5 15l7-7 7 7" />
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <div class="flex cursor-pointer items-center" wire:click="sortBy('start_time')">
+                                        Waktu
+                                        @if ($sortField === 'start_time')
+                                            @if ($sortDirection === 'asc')
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M5 15l7-7 7 7" />
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    Durasi
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <div class="flex cursor-pointer items-center" wire:click="sortBy('created_at')">
+                                        Dibuat
+                                        @if ($sortField === 'created_at')
+                                            @if ($sortDirection === 'asc')
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M5 15l7-7 7 7" />
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    Aksi
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            @foreach ($sessions as $session)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <div class="flex items-center">
+                                            <div class="h-10 w-10 flex-shrink-0">
+                                                <div
+                                                    class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                        class="h-5 w-5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    {{ $session['subject_title'] }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            {{ \Carbon\Carbon::parse($session['class_date'])->format('d M Y') }}
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            {{ \Carbon\Carbon::parse($session['start_time'])->format('H:i') }} -
+                                            {{ \Carbon\Carbon::parse($session['end_time'])->format('H:i') }}
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            @php
+                                                if (!empty($session['start_time']) && !empty($session['end_time'])) {
+                                                    $start = \Carbon\Carbon::parse($session['start_time']);
+                                                    $end = \Carbon\Carbon::parse($session['end_time']);
+                                                    $durationHours = $start->diffInHours($end);
+                                                    $durationMinutes = $start->diffInMinutes($end) % 60;
+                                                    echo sprintf('%02d:%02d', $durationHours, $durationMinutes);
+                                                } else {
+                                                    echo 'N/A';
+                                                }
+                                            @endphp
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                        {{ \Carbon\Carbon::parse($session['created_at'])->diffForHumans(['locale' => 'id']) }}
+                                    </td>
+                                    <!-- Perbaikan dropdown menu pada tampilan desktop -->
+                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                        <div class="flex justify-end space-x-2">
+                                            <a href="{{ route('session.attendance', $session['id']) }}" wire:navigate
+                                                class="rounded-md bg-blue-100 px-2.5 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-200">
+                                                Kelola
+                                            </a>
+                                            <div class="relative" x-data="{ open: false }">
+                                                <button @click="open = !open" type="button"
+                                                    class="rounded-md bg-gray-100 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200">
+                                                    Opsi
+                                                </button>
+
+                                                <!-- Perbaikan z-index dan positioning -->
+                                                <div x-show="open" @click.away="open = false"
+                                                    class="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                                    x-cloak style="min-width: 150px;">
+                                                    <button wire:click="editSession({{ $session['id'] }})"
+                                                        @click="open = false; $dispatch('open-edit-modal')"
+                                                        class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                            viewBox="0 0 24 24" stroke-width="1.5"
+                                                            stroke="currentColor" class="mr-2 h-4 w-4 text-blue-500">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                        </svg>
+                                                        Edit
+                                                    </button>
+                                                    <button wire:click="confirmDeleteSession({{ $session['id'] }})"
+                                                        @click="open = false; $dispatch('open-delete-modal')"
+                                                        class="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                            viewBox="0 0 24 24" stroke-width="1.5"
+                                                            stroke="currentColor" class="mr-2 h-4 w-4 text-red-500">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                        </svg>
+                                                        Hapus
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile view (responsive card-like table) -->
+                <div class="space-y-4 md:hidden">
                     @foreach ($sessions as $session)
-                        <div class="overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md">
-                            <!-- Session Header -->
-                            <div class="border-b border-gray-200 bg-blue-50 px-4 py-4 sm:px-6">
+                        <div class="rounded-lg bg-white shadow">
+                            <div class="border-b border-gray-200 bg-blue-50 px-4 py-4">
                                 <div class="flex items-center justify-between">
                                     <h3 class="truncate text-base font-medium leading-6 text-gray-900">
                                         {{ $session['subject_title'] }}
                                     </h3>
-                                    <!-- Action Menu -->
                                     <div class="relative ml-2" x-data>
-                                        <button @click="toggleMenu({{ $session['id'] }})" type="button"
-                                            class="rounded-full p-1 text-gray-500 hover:bg-blue-100 hover:text-gray-700 focus:outline-none">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="h-5 w-5">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                                            </svg>
-                                        </button>
-                                        <div x-show="sessionMenuOpen === {{ $session['id'] }}"
-                                            @click.away="sessionMenuOpen = null"
-                                            x-transition:enter="transition ease-out duration-100"
-                                            x-transition:enter-start="transform opacity-0 scale-95"
-                                            x-transition:enter-end="transform opacity-100 scale-100"
-                                            x-transition:leave="transition ease-in duration-75"
-                                            x-transition:leave-start="transform opacity-100 scale-100"
-                                            x-transition:leave-end="transform opacity-0 scale-95"
-                                            class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                                            x-cloak>
-                                            <button wire:click="editSession({{ $session['id'] }})"
-                                                @click="editSessionModal = true; sessionMenuOpen = null"
-                                                class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+
+                                        <!-- Perbaikan dropdown -->
+                                        <div class="relative ml-2" x-data="{ open: false }">
+                                            <button @click="open = !open" type="button"
+                                                class="rounded-full p-1 text-gray-500 hover:bg-blue-100 hover:text-gray-700 focus:outline-none">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                     viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="mr-2 h-4 w-4 text-blue-500">
+                                                    class="h-5 w-5">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                        d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
                                                 </svg>
-                                                Edit Pertemuan
                                             </button>
-                                            <button wire:click="confirmDeleteSession({{ $session['id'] }})"
-                                                @click="deleteSessionModal = true; sessionMenuOpen = null"
-                                                class="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="mr-2 h-4 w-4 text-red-500">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                                </svg>
-                                                Hapus Pertemuan
-                                            </button>
+                                            <div x-show="open" @click.away="open = false"
+                                                class="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                                x-cloak>
+                                                <button wire:click="editSession({{ $session['id'] }})"
+                                                    @click="open = false; $dispatch('open-edit-modal')"
+                                                    class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                        class="mr-2 h-4 w-4 text-blue-500">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                    </svg>
+                                                    Edit
+                                                </button>
+                                                <button wire:click="confirmDeleteSession({{ $session['id'] }})"
+                                                    @click="open = false; $dispatch('open-delete-modal')"
+                                                    class="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                        class="mr-2 h-4 w-4 text-red-500">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                    </svg>
+                                                    Hapus
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-1">
-                                    <span class="text-xs text-gray-500">
-                                        Dibuat
-                                        {{ \Carbon\Carbon::parse($session['created_at'])->diffForHumans(['locale' => 'id']) }}
-                                    </span>
-                                </div>
                             </div>
-                            <!-- Session Content -->
-                            <div class="bg-white px-4 py-5 sm:p-6">
+                            <div class="px-4 py-4">
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div class="flex flex-col space-y-1">
+                                    <div>
                                         <div class="text-xs font-medium uppercase text-gray-500">Tanggal</div>
-                                        <div class="flex items-center text-sm text-gray-700">
+                                        <div class="mt-1 flex items-center text-sm text-gray-900">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
                                                 class="mr-1.5 h-4 w-4 text-gray-400">
@@ -453,18 +792,14 @@ new #[Layout('layouts.app')] class extends Component {
                                             {{ \Carbon\Carbon::parse($session['class_date'])->format('d M Y') }}
                                         </div>
                                     </div>
-                                    <div class="flex flex-col space-y-1 text-end">
+                                    <div>
                                         <div class="text-xs font-medium uppercase text-gray-500">Waktu</div>
-                                        <div class="flex items-center justify-end text-end text-sm text-gray-700">
+                                        <div class="mt-1 flex items-center text-sm text-gray-900">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="mr-1.5 size-4 h-4 w-4 text-gray-400">
+                                                class="mr-1.5 h-4 w-4 text-gray-400">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                            </svg>
-
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0" />
+                                                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             {{ \Carbon\Carbon::parse($session['start_time'])->format('H:i') }} -
                                             {{ \Carbon\Carbon::parse($session['end_time'])->format('H:i') }}
@@ -472,53 +807,17 @@ new #[Layout('layouts.app')] class extends Component {
                                     </div>
                                 </div>
 
-                                <!-- Durasi Pertemuan -->
-                                <div class="mt-4">
-                                    <div class="rounded-md bg-gray-50 px-3 py-2">
-                                        <div class="flex items-center justify-between">
-                                            <div class="text-xs font-medium text-gray-500">Durasi</div>
-                                            <div class="text-sm font-medium text-gray-700">
-                                                @php
-                                                    if (
-                                                        !empty($session['start_time']) &&
-                                                        !empty($session['end_time'])
-                                                    ) {
-                                                        $start = \Carbon\Carbon::parse($session['start_time']);
-                                                        $end = \Carbon\Carbon::parse($session['end_time']);
-                                                        $durationHours = $start->diffInHours($end);
-                                                        $durationMinutes = $start->diffInMinutes($end) % 60;
-                                                        echo sprintf('%02d:%02d', $durationHours, $durationMinutes);
-                                                    } else {
-                                                        echo 'Durasi tidak tersedia';
-                                                    }
-                                                @endphp
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-
-                            <!-- Session Footer -->
-                            <div class="border-t border-gray-200 bg-gray-50 px-4 py-4 text-right sm:px-6">
-                                <a href="{{ route('session.attendance', $session['id']) }}" wire:navigate
-                                    class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="mr-2 h-4 w-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d=" M9 12h3.75M9
-                                                    15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0
-                                                    002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0
-                                                    00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0
-                                                    .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8
-                                                    0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8
-                                                    0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0
-                                                    0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125
-                                                    1.125h9.75c.621 0 1.125-.504
-                                                    1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75
-                                                    12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0
-                                                    3h.008v.008H6.75V18z" />
-                                    </svg>
-                                    Kelola Presensi
-                                </a>
+                            <div class="border-t border-gray-200 bg-gray-50 px-4 py-4 text-right">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">
+                                        {{ \Carbon\Carbon::parse($session['created_at'])->diffForHumans(['locale' => 'id']) }}
+                                    </span>
+                                    <a href="{{ route('session.attendance', $session['id']) }}" wire:navigate
+                                        class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                                        Kelola Presensi
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     @endforeach
