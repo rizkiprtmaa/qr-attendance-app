@@ -111,7 +111,7 @@ new class extends Component {
 }; ?>
 
 <div x-data="{ modalCreateOpen: false }">
-    <div class="mb-6">
+    <div class="mb-6 pt-10 md:pt-0">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-medium text-gray-800">Pengajuan Izin</h2>
             <button x-on:click="modalCreateOpen = true"
@@ -123,14 +123,22 @@ new class extends Component {
     </div>
 
     <!-- Daftar Pengajuan Izin -->
-    <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+    <div class="mt-6 rounded-lg bg-white shadow">
         <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg font-medium leading-6 text-gray-900">Riwayat Pengajuan</h3>
             <p class="mt-1 max-w-2xl text-sm text-gray-500">Daftar pengajuan izin yang telah Anda buat</p>
         </div>
 
+
+
+
+    </div>
+
+    <div>
+
         @if (count($permissions) > 0)
-            <div class="overflow-x-auto">
+            <!-- Tampilan Tabel untuk Desktop -->
+            <div class="mt-5 hidden overflow-x-auto rounded-lg bg-white shadow md:block">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -211,6 +219,83 @@ new class extends Component {
                     </tbody>
                 </table>
             </div>
+
+            <!-- Tampilan Card untuk Mobile -->
+            <div class="md:hidden">
+                <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow">
+                    @foreach ($permissions as $permission)
+                        <div class="p-4 sm:px-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex flex-row items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                        class="size-4">
+                                        <path fill-rule="evenodd"
+                                            d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="ml-2 pt-0.5 text-xs text-slate-900">
+                                        {{ \Carbon\Carbon::parse($permission->permission_date)->locale('id')->translatedFormat('d F Y') }}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    @if ($permission->status === 'approved')
+                                        <span
+                                            class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
+                                            Disetujui
+                                        </span>
+                                    @elseif($permission->status === 'rejected')
+                                        <span
+                                            class="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
+                                            Ditolak
+                                        </span>
+                                    @else
+                                        <span
+                                            class="inline-flex rounded-full bg-gray-100 px-2 text-xs font-semibold leading-5 text-gray-800">
+                                            Menunggu
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="mt-3 flex flex-row items-center">
+                                <span
+                                    class="{{ $permission->type === 'sakit' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }} inline-flex rounded-full px-2 text-xs font-semibold leading-5">
+                                    {{ ucfirst($permission->type) }}
+                                </span>
+                            </div>
+
+
+
+                            <div class="mt-2 flex items-center justify-between">
+                                <div>
+                                    @if ($permission->attachment_path)
+                                        <a href="{{ Storage::url($permission->attachment_path) }}" target="_blank"
+                                            class="text-xs text-blue-600 hover:text-blue-900">
+                                            Lihat Lampiran
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-gray-500">Tanpa lampiran</span>
+                                    @endif
+                                </div>
+                                <div class="flex flex-row gap-3">
+                                    @if ($permission->status === 'pending')
+                                        <button
+                                            class="text-xs font-medium text-blue-600 hover:text-blue-900">Detail</button>
+                                        <button wire:click="cancelPermission({{ $permission->id }})"
+                                            wire:confirm="Yakin ingin membatalkan pengajuan ini?"
+                                            class="text-xs font-medium text-red-600 hover:text-red-900">
+                                            Batalkan
+                                        </button>
+                                    @else
+                                        <button
+                                            class="text-xs font-medium text-blue-600 hover:text-blue-900">Detail</button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         @else
             <div class="py-8 text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -271,8 +356,8 @@ new class extends Component {
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label for="description" class="block text-sm font-medium text-gray-700">Alasan Pengajuan <span
-                                class="text-xs text-gray-400">(jika ada)</span></label>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Alasan Pengajuan
+                            <span class="text-xs text-gray-400">(jika ada)</span></label>
                         <textarea wire:model="description" placeholder="deskripsikan alasan pengajuan izin/sakit"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
                         @error('description')
@@ -310,23 +395,50 @@ new class extends Component {
     </div>
 
     <!-- Success Message Toast -->
-    @if (session()->has('success'))
-        <div id="toast-success" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)"
-            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg bg-white p-4 text-gray-500 shadow"
+    <div x-data="{
+        toastMessage: '',
+        toastType: '',
+        showToast: false
+    }"
+        x-on:show-toast.window="
+            const data = $event.detail[0] || $event.detail;
+            toastMessage = data.message;
+            toastType = data.type;
+            showToast = true;
+            setTimeout(() => showToast = false, 3000)
+         ">
+
+        <div x-cloak x-show="showToast" x-transition.opacity
+            :class="toastType === 'success' ? 'bg-white text-gray-500' : 'bg-red-100 text-red-700'"
+            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg p-4 shadow"
             role="alert">
-            <div
-                class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
-                <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
-                    viewBox="0 0 20 20">
-                    <path
-                        d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                </svg>
-                <span class="sr-only">Success icon</span>
-            </div>
-            <div class="ml-3 text-sm font-normal">{{ session('success') }}</div>
-            <button type="button" @click="show = false"
-                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900">
-                <span class="sr-only">Close</span>
+
+            <template x-if="toastType === 'success'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <template x-if="toastType === 'error'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <div class="ml-3 text-sm font-normal" x-text="toastMessage"></div>
+
+            <button type="button" @click="showToast = false"
+                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300">
                 <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                     viewBox="0 0 14 14">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -334,5 +446,5 @@ new class extends Component {
                 </svg>
             </button>
         </div>
-    @endif
+    </div>
 </div>

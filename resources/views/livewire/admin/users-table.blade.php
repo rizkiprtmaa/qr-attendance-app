@@ -141,7 +141,7 @@ new class extends Component {
 
     <div
         class="relative max-w-[28rem] overflow-x-auto whitespace-nowrap shadow-md sm:rounded-lg md:max-w-full md:overflow-x-auto">
-        <table class="w-full overflow-scroll text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
+        <table class="w-full overflow-scroll text-left text-sm text-gray-500 dark:text-gray-400 rtl:text-right">
             <thead class="bg-blue-500 text-xs uppercase text-white">
                 <tr>
                     <th scope="col" class="flex flex-row items-center gap-2 px-6 py-3"

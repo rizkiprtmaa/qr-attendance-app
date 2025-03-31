@@ -263,9 +263,9 @@ new class extends Component {
             }
         @endphp
 
-        <p class="mt-1 font-inter text-base font-medium text-gray-600">✨ {{ $greeting }},
+        <p class="mt-1 font-inter text-sm font-medium text-gray-600 md:text-base">✨ {{ $greeting }},
             {{ auth()->user()->name }}</p>
-        <p class="font-inter text-sm font-medium text-gray-600">
+        <p class="hidden font-inter text-xs font-medium text-gray-600 md:block md:text-sm">
             {{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y') }}
         </p>
 
@@ -302,7 +302,7 @@ new class extends Component {
     <!-- Overview Tab Content -->
     <div x-show="activeTab === 'overview'" class="mt-6">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div
                 class="flex flex-col gap-4 rounded-lg border border-slate-400/30 bg-white p-4 shadow-sm transition duration-300 hover:shadow-md">
                 <div>
@@ -371,12 +371,12 @@ new class extends Component {
         </div>
 
         <!-- Jadwal Hari Ini -->
-        <div class="mt-8 grid grid-cols-1 gap-0 md:gap-6 lg:grid-cols-3">
+        <div class="mt-8 grid grid-cols-1 gap-0 md:grid-cols-3 md:gap-6">
             <div class="col-span-2">
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-md font-inter font-semibold text-gray-800">Jadwal Hari Ini</h2>
                     <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-                        {{ \Carbon\Carbon::now('Asia/Jakarta')->format('l') }}
+                        {{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l') }}
                     </span>
                 </div>
 
@@ -416,11 +416,11 @@ new class extends Component {
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <p class="text-sm font-medium text-gray-900">
+                                            <p class="text-xs font-medium text-gray-900 md:text-sm">
                                                 {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} -
                                                 {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}</p>
-                                            <a href="{{ route('session.attendance', $session) }}"
-                                                class="mt-1 inline-block font-inter text-xs text-blue-600 hover:underline">Kelola
+                                            <a href="{{ route('session.attendance', $session) }}" wire:navigate
+                                                class="mt-1 inline-block whitespace-nowrap font-inter text-xs text-blue-600 hover:underline">Kelola
                                                 Presensi</a>
                                         </div>
                                     </li>
@@ -435,7 +435,8 @@ new class extends Component {
                                     d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                             </svg>
                             <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada jadwal hari ini</h3>
-                            <p class="mt-1 text-sm text-gray-500">Anda tidak memiliki kelas yang dijadwalkan untuk hari
+                            <p class="mt-1 text-center text-sm text-gray-500">Anda tidak memiliki kelas yang
+                                dijadwalkan untuk hari
                                 ini.</p>
                         </div>
                     @endif
@@ -533,7 +534,7 @@ new class extends Component {
                     Kelola Kehadiran
                 </a>
             </div>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                 @forelse ($subjectClassSessions->sortByDesc('created_at')->take(6) as $subject)
                     <div
                         class="rounded-lg border border-slate-200 bg-white shadow-sm transition duration-300 hover:shadow-md">
@@ -731,11 +732,12 @@ new class extends Component {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="font-medium text-gray-900">{{ $class->class_name }}</h3>
-                                    <div class="mt-1 flex flex-row items-center gap-1">
+                                    <h3 class="text-sm font-medium text-gray-900 md:text-base">
+                                        {{ $class->class_name }}</h3>
+                                    <div class="mt-1 flex flex-row items-center gap-1 whitespace-normal">
                                         <span
                                             class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                            {{ $class->classes->major->name }}
+                                            {{ Str::wordCount($class->classes->major->name) > 2 ? $class->classes->major->code : $class->classes->major->name }}
                                         </span>
                                         <span
                                             class="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
@@ -745,7 +747,7 @@ new class extends Component {
                                 </div>
                             </div>
                             <div>
-                                <p class="text-xs font-medium uppercase text-gray-500">Jumlah Pertemuan</p>
+                                <p class="whitespace-nowrap text-xs text-gray-500">Jumlah Pertemuan</p>
                                 <p class="text-end text-sm text-gray-900">
                                     {{ $subjectClassSessions->where('subject_class_id', $class->id)->count() }}
                                 </p>
@@ -756,7 +758,7 @@ new class extends Component {
 
                         <div class="mt-4 flex justify-end">
                             <a href="{{ route('subject.detail', $class) }}"
-                                class="text-sm font-medium text-blue-600 hover:text-blue-900">
+                                class="text-xs font-medium text-blue-600 hover:text-blue-900 md:text-sm">
                                 Lihat Detail
                             </a>
                         </div>
@@ -786,9 +788,9 @@ new class extends Component {
             <h2 class="mb-4 text-lg font-semibold text-gray-800">Statistik Kehadiran</h2>
 
             <!-- Overview Statistics Cards -->
-            <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
                 <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex items-start">
+                    <div class="flex flex-col items-start md:flex-row">
                         <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-green-600">
@@ -796,8 +798,8 @@ new class extends Component {
                                     d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Tingkat Kehadiran</p>
+                        <div class="mt-2 md:mt-0">
+                            <p class="text-xs font-medium text-gray-500 sm:text-sm">Tingkat Kehadiran</p>
                             <p class="text-2xl font-bold text-gray-900">
                                 {{ number_format($attendanceStats['total_attendance_rate'], 1) }}%</p>
                             <p class="mt-1 text-xs text-green-600">Keseluruhan</p>
@@ -806,7 +808,7 @@ new class extends Component {
                 </div>
 
                 <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex items-start">
+                    <div class="flex flex-col items-start md:flex-row">
                         <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-yellow-600">
@@ -814,8 +816,8 @@ new class extends Component {
                                     d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                             </svg>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Izin & Sakit</p>
+                        <div class="mt-2 md:mt-0">
+                            <p class="text-xs font-medium text-gray-500 md:text-sm">Izin & Sakit</p>
                             <p class="text-2xl font-bold text-gray-900">
                                 {{ number_format($attendanceStats['izin_sakit_rate'], 1) }}%</p>
                             <p class="mt-1 text-xs text-gray-500">Dari Total Pertemuan</p>
@@ -824,15 +826,15 @@ new class extends Component {
                 </div>
 
                 <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex items-start">
+                    <div class="flex flex-col items-start md:flex-row">
                         <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-red-600">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Tanpa Keterangan</p>
+                        <div class="mt-2 md:mt-0">
+                            <p class="text-xs font-medium text-gray-500 md:text-sm">Tanpa Keterangan</p>
                             <p class="text-2xl font-bold text-gray-900">
                                 {{ number_format($attendanceStats['tanpa_keterangan_rate'], 1) }}%</p>
                             <p class="mt-1 text-xs text-red-600">Dari Total Pertemuan</p>
@@ -841,7 +843,7 @@ new class extends Component {
                 </div>
 
                 <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex items-start">
+                    <div class="flex flex-col items-start md:flex-row">
                         <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-purple-600">
@@ -849,8 +851,8 @@ new class extends Component {
                                     d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
                             </svg>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Siswa yang Perlu Perhatian</p>
+                        <div class="mt-2 md:mt-0">
+                            <p class="text-xs font-medium text-gray-500 md:text-sm">Siswa yang Perlu Perhatian</p>
                             <p class="text-2xl font-bold text-gray-900">
                                 {{ $attendanceStats['students_needing_attention'] }}</p>
                             <p class="mt-1 text-xs text-gray-500">Kehadiran < 70%</p>
@@ -868,7 +870,7 @@ new class extends Component {
         </div>
 
         <!-- Class Comparison -->
-        <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <h2 class="mb-4 text-lg font-semibold text-gray-800">Perbandingan Kehadiran Antar Kelas</h2>
 
             <div class="overflow-hidden rounded-lg border border-gray-200">

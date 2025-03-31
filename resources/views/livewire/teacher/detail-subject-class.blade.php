@@ -332,16 +332,7 @@ new #[Layout('layouts.app')] class extends Component {
         });
     }
 }">
-    <div class="mt-10 w-full md:mt-0">
-        <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-            <div class="flex flex-col gap-3">
-                <h2 class="font-inter text-xl font-medium leading-tight text-gray-800">
-                    {{ __('Detail Kelas') }}
-                </h2>
-                <p class="font-inter text-sm text-gray-600">Buat sesi pertemuan untuk mengelola presensi kelas</p>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Success Message Toast -->
     @if (session()->has('success'))
@@ -389,16 +380,34 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
     @endif
 
-    <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+    <div class="mx-auto mt-10 max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
         <!-- Header Card -->
         <div class="flex w-full flex-col justify-between rounded-lg bg-white p-6 shadow-md md:flex-row md:items-center">
-            <div class="flex flex-row justify-between gap-2 md:flex-col">
+            <div class="flex flex-row items-center justify-between gap-2 md:flex-col">
                 <div class="flex flex-col">
                     <p class="flex flex-col font-inter text-xl font-medium">{{ $subjectName }}</p>
-                    <p class="text-sm text-gray-500">{{ $subjectCode }}</p>
+                    <span
+                        class="mt-2 inline-flex items-center rounded-full bg-blue-100 px-3 py-2 text-xs font-medium text-blue-800 md:hidden md:py-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
+                        </svg>
+                        <span class="ml-1 text-xs">
+                            {{ $className }} - {{ $major }}
+                        </span>
+                    </span>
+                </div>
+                <div
+                    class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 md:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
                 </div>
                 <span
-                    class="inline-flex items-center rounded-full bg-blue-100 px-3 py-0 text-sm font-medium text-blue-800 md:py-2">
+                    class="hidden items-center rounded-full bg-blue-100 px-3 py-0 text-sm font-medium text-blue-800 md:inline-flex md:py-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-4 w-4">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -459,7 +468,7 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
 
         <!-- Action Button -->
-        <div class="mt-5 flex justify-end md:justify-start">
+        <div class="mt-5 flex justify-start">
             <button @click="createSessionModal = true"
                 class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"

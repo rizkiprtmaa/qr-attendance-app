@@ -341,7 +341,7 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
 
         <!-- Attendance List -->
-        <div class="overflow-hidden bg-white shadow sm:rounded-md">
+        <div class="bg-white shadow sm:rounded-md">
             @if (count($attendances) > 0)
                 <ul role="list" class="divide-y divide-gray-200">
                     @foreach ($attendances as $attendance)
@@ -398,7 +398,7 @@ new #[Layout('layouts.app')] class extends Component {
                                         @break
                                     @endswitch
                                 </div>
-                                <div x-data="{ open: false }" class="ml-4">
+                                <div x-data="{ open: false }" class="relative ml-4">
                                     <button @click="open = !open" type="button"
                                         class="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -409,13 +409,14 @@ new #[Layout('layouts.app')] class extends Component {
                                     </button>
 
                                     <div x-show="open" @click.away="open = false"
-                                        :class="{
-                                            'right-0 left-auto': window.innerWidth > 640,
-                                            'right-0 left-auto': window
-                                                .innerWidth <= 640
-                                        }"
-                                        style="max-width: 90vw;"
-                                        class="absolute z-10 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95"
+                                        class="absolute bottom-full right-0 z-50 mb-2 w-48 origin-bottom-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                        style="position: absolute; bottom: 100%; right: 0; margin-bottom: 0.5rem;">
                                         <div class="py-1">
                                             <a href="#"
                                                 wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'hadir')"
