@@ -265,9 +265,7 @@ new class extends Component {
 
         <p class="mt-1 font-inter text-sm font-medium text-gray-600 md:text-base">✨ {{ $greeting }},
             {{ auth()->user()->name }}</p>
-        <p class="hidden font-inter text-xs font-medium text-gray-600 md:block md:text-sm">
-            {{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y') }}
-        </p>
+
 
 
     </div>

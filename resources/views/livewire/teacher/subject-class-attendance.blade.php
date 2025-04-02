@@ -16,6 +16,8 @@ new #[Layout('layouts.app')] class extends Component {
     public $subjectClassId;
     public $className;
     public $classCode;
+    public $studentClassName;
+    public $majorName;
     public $attendances = [];
 
     // Filter properties
@@ -37,6 +39,10 @@ new #[Layout('layouts.app')] class extends Component {
         $subjectClass = $session->subjectClass;
         $this->className = $subjectClass->class_name;
         $this->classCode = $subjectClass->class_code;
+
+        // Get classes detail
+        $this->studentClassName = $subjectClass->classes->name;
+        $this->majorName = $subjectClass->classes->major->name;
 
         // Load attendances
         $this->loadAttendances();
@@ -127,7 +133,7 @@ new #[Layout('layouts.app')] class extends Component {
 
 
 <div>
-    <div class="mt-10 w-full md:mt-0">
+    {{-- <div class="mt-10 w-full md:mt-0">
         <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
             <div class="flex flex-col gap-3">
                 <div class="flex items-center justify-between">
@@ -149,7 +155,7 @@ new #[Layout('layouts.app')] class extends Component {
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Success Message Toast -->
     @if (session()->has('success'))
@@ -195,32 +201,37 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
     @endif
 
-    <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+    <div class="mx-auto mt-10 max-w-7xl px-2 py-3 md:mt-0 md:px-4 lg:px-8">
         <!-- Session Info Card -->
         <div class="mb-6 overflow-hidden rounded-lg bg-white shadow">
             <div class="px-4 py-5 sm:px-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h3 class="text-lg font-medium leading-6 text-gray-900">{{ $className }}</h3>
-                        <p class="mt-1 max-w-2xl text-sm text-gray-500">{{ $classCode }}</p>
+                        <h3 class="font-inter text-lg font-medium leading-6 text-gray-900">{{ $subjectTitle }}</h3>
+                        <p class="mt-1 max-w-2xl font-inter text-sm text-gray-500">{{ $className }}</p>
+                        <p class="mt-1 max-w-2xl font-inter text-sm text-gray-500">{{ $studentClassName }} -
+                            {{ $majorName }}</p>
+
                     </div>
                     <div class="mt-3 flex flex-col sm:mt-0">
                         <p class="flex items-center text-sm text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor"
-                                class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-1 h-4 w-4">
+                                <path fill-rule="evenodd"
+                                    d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
+                                    clip-rule="evenodd" />
                             </svg>
+
                             {{ \Carbon\Carbon::parse($classDate)->locale('id')->translatedFormat('l, d F Y') }}
                         </p>
                         <p class="mt-1 flex items-center text-sm text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor"
-                                class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-1 h-4 w-4">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z"
+                                    clip-rule="evenodd" />
                             </svg>
+
                             {{ \Carbon\Carbon::parse($startTime)->format('H:i') }} -
                             {{ \Carbon\Carbon::parse($endTime)->format('H:i') }}
                         </p>
@@ -231,53 +242,80 @@ new #[Layout('layouts.app')] class extends Component {
 
         <!-- Attendance Stats -->
         <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div class="overflow-hidden rounded-lg bg-white shadow">
+            <!-- Total Siswa -->
+            <div class="overflow-hidden rounded-lg bg-white shadow transition duration-200 hover:shadow-md">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">Total Siswa</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ $stats['total'] }}</dd>
+                    <dt class="flex items-center text-sm font-medium text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-blue-500" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path
+                                d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                        </svg>
+                        Total Siswa
+                    </dt>
+                    <dd class="mt-2 text-3xl font-semibold text-gray-900">{{ $stats['total'] }}</dd>
                 </div>
             </div>
-            <div class="overflow-hidden rounded-lg bg-green-50 shadow">
+
+            <!-- Hadir -->
+            <div class="overflow-hidden rounded-lg bg-green-50 shadow transition duration-200 hover:shadow-md">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="truncate text-sm font-medium text-green-800">Hadir</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-green-600">{{ $stats['hadir'] }}</dd>
+                    <dt class="flex items-center text-sm font-medium text-green-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-green-600" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Hadir
+                    </dt>
+                    <dd class="mt-2 text-3xl font-semibold text-green-600">{{ $stats['hadir'] }}</dd>
+                    <p class="mt-1 flex justify-start text-sm text-green-600 md:justify-end">
+                        {{ number_format(($stats['hadir'] / ($stats['total'] > 0 ? $stats['total'] : 1)) * 100, 0) }}%
+                    </p>
                 </div>
             </div>
-            <div class="overflow-hidden rounded-lg bg-yellow-50 shadow">
+
+            <!-- Sakit/Izin -->
+            <div class="overflow-hidden rounded-lg bg-yellow-50 shadow transition duration-200 hover:shadow-md">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="truncate text-sm font-medium text-yellow-800">Sakit/Izin</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-yellow-600">{{ $stats['sakit'] + $stats['izin'] }}</dd>
+                    <dt class="flex items-center text-sm font-medium text-yellow-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-yellow-600" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Sakit/Izin
+                    </dt>
+                    <dd class="mt-2 text-3xl font-semibold text-yellow-600">{{ $stats['sakit'] + $stats['izin'] }}</dd>
+                    <p class="mt-1 flex justify-start text-sm text-yellow-600 md:justify-end">
+                        {{ number_format((($stats['sakit'] + $stats['izin']) / ($stats['total'] > 0 ? $stats['total'] : 1)) * 100, 0) }}%
+                    </p>
                 </div>
             </div>
-            <div class="overflow-hidden rounded-lg bg-red-50 shadow">
+
+            <!-- Tidak Hadir -->
+            <div class="overflow-hidden rounded-lg bg-red-50 shadow transition duration-200 hover:shadow-md">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="truncate text-sm font-medium text-red-800">Tidak Hadir</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-red-600">{{ $stats['tidak_hadir'] }}</dd>
+                    <dt class="flex items-center text-sm font-medium text-red-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-red-600" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Tidak Hadir
+                    </dt>
+                    <dd class="mt-2 text-3xl font-semibold text-red-600">{{ $stats['tidak_hadir'] }}</dd>
+                    <p class="mt-1 flex justify-start text-sm text-red-600 md:justify-end">
+                        {{ number_format(($stats['tidak_hadir'] / ($stats['total'] > 0 ? $stats['total'] : 1)) * 100, 0) }}%
+                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- Manual Attendance Instructions -->
-        <div class="mb-6 rounded-lg bg-blue-50 p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                        fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-blue-800">Panduan Absensi Manual</h3>
-                    <div class="mt-2 text-sm text-blue-700">
-                        <p>Silakan tandai status kehadiran siswa menggunakan menu yang tersedia di samping nama
-                            masing-masing siswa. Anda juga dapat menggunakan menu "Tindakan Massal" untuk menandai semua
-                            siswa sekaligus.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Attendance Controls -->
         <div class="mb-6">
@@ -308,7 +346,7 @@ new #[Layout('layouts.app')] class extends Component {
                 </div>
 
                 <!-- Bulk Actions -->
-                <div x-data="{ open: false }" class="flex items-center gap-3">
+                <div x-data="{ bulkActionOpen: false }" class="relative flex items-center gap-3">
                     <a href="{{ route('attendance.pdf', $sessionId) }}" target="_blank"
                         class="inline-flex items-center rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:bg-green-700">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -318,22 +356,32 @@ new #[Layout('layouts.app')] class extends Component {
                         </svg>
                         Unduh PDF
                     </a>
-                    <button @click="open = !open" type="button"
-                        class="inline-flex justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                        Tindakan Massal
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke-width="1.5" stroke="currentColor" class="-mr-1 ml-2 h-5 w-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
-                    </button>
-                    <div x-show="open" @click.away="open = false"
-                        class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                        <div class="py-1">
-                            <a href="#" wire:click.prevent="bulkUpdateStatus('hadir')"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua Hadir</a>
-                            <a href="#" wire:click.prevent="bulkUpdateStatus('tidak_hadir')"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua Tidak
-                                Hadir</a>
+                    <div class="relative">
+                        <button @click="bulkActionOpen = !bulkActionOpen" type="button"
+                            class="inline-flex justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                            Tindakan Massal
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="-mr-1 ml-2 h-5 w-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                        <div x-cloak x-show="bulkActionOpen" @click.away="bulkActionOpen = false"
+                            class="absolute bottom-full right-0 z-50 mt-2 w-48 origin-bottom-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                            x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="transform opacity-0 scale-95"
+                            x-transition:enter-end="transform opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="transform opacity-100 scale-100"
+                            x-transition:leave-end="transform opacity-0 scale-95">
+                            <div class="py-1">
+                                <a href="#" wire:click.prevent="bulkUpdateStatus('hadir')"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua
+                                    Hadir</a>
+                                <a href="#" wire:click.prevent="bulkUpdateStatus('tidak_hadir')"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua Tidak
+                                    Hadir</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -341,7 +389,7 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
 
         <!-- Attendance List -->
-        <div class="bg-white shadow sm:rounded-md">
+        <div class="rounded-md bg-white shadow">
             @if (count($attendances) > 0)
                 <ul role="list" class="divide-y divide-gray-200">
                     @foreach ($attendances as $attendance)
@@ -359,16 +407,16 @@ new #[Layout('layouts.app')] class extends Component {
                                             </svg>
                                         </div>
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">
+                                    <div class="ml-4 flex flex-col">
+                                        <div class="truncate whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ $attendance['student']['user']['name'] }}
                                         </div>
-                                        <div class="text-sm text-gray-500">
+                                        <div class="text-xs text-gray-500 md:text-sm">
                                             {{ $attendance['student']['nisn'] }}
                                         </div>
                                     </div>
                                 </div>
-                                <div class="ml-4 flex flex-shrink-0">
+                                <div class="ml-4 hidden flex-shrink-0 md:flex">
                                     @if ($attendance['check_in_time'])
                                         <span
                                             class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($attendance['check_in_time'])->timezone('Asia/Jakarta')->format('H:i') }}</span>
@@ -408,7 +456,7 @@ new #[Layout('layouts.app')] class extends Component {
                                         </svg>
                                     </button>
 
-                                    <div x-show="open" @click.away="open = false"
+                                    <div x-show="open" @click.away="open = false" x-cloak
                                         x-transition:enter="transition ease-out duration-100"
                                         x-transition:enter-start="transform opacity-0 scale-95"
                                         x-transition:enter-end="transform opacity-100 scale-100"
@@ -419,19 +467,19 @@ new #[Layout('layouts.app')] class extends Component {
                                         style="position: absolute; bottom: 100%; right: 0; margin-bottom: 0.5rem;">
                                         <div class="py-1">
                                             <a href="#"
-                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'hadir')"
+                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'hadir'); open = false"
                                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
                                                 Hadir</a>
                                             <a href="#"
-                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'tidak_hadir')"
+                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'tidak_hadir'); open = false"
                                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
                                                 Tidak Hadir</a>
                                             <a href="#"
-                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'sakit')"
+                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'sakit'); open = false"
                                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
                                                 Sakit</a>
                                             <a href="#"
-                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'izin')"
+                                                wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'izin'); open = false"
                                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
                                                 Izin</a>
                                         </div>

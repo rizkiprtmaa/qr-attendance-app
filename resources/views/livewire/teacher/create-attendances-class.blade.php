@@ -599,13 +599,9 @@ new class extends Component {
 
                                 <!-- Fixed Dropdown with Absolute Positioning -->
                                 <div x-cloak x-show="sessionMenuOpen === {{ $subjectClass->id }}"
-                                    :class="{
-                                        'right-0 left-auto': window.innerWidth > 640,
-                                        'right-0 left-auto': window
-                                            .innerWidth <= 640
-                                    }"
+                                    style="position: absolute; bottom: 100%; right: 0; margin-bottom: 0.5rem;"
                                     @click.away="sessionMenuOpen = null"
-                                    class="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                    class="absolute bottom-full right-0 mt-2 w-48 origin-bottom-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                                     style="z-index: 100;" x-transition:enter="transition ease-out duration-100"
                                     x-transition:enter-start="transform opacity-0 scale-95"
                                     x-transition:enter-end="transform opacity-100 scale-100"
@@ -991,18 +987,18 @@ new class extends Component {
                 </div>
                 <div class="mt-3 text-center">
                     <h3 class="text-lg font-medium leading-6 text-gray-900" id="deleteSubjectModalTitle">
-                        Hapus Pertemuan
+                        Hapus Mata Pelajaran
                     </h3>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">
-                            Apakah Anda yakin ingin menghapus pertemuan ini? Semua data presensi siswa untuk pertemuan
+                            Apakah Anda yakin ingin menghapus mapel ini? Semua data presensi siswa untuk mapel
                             ini juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
                         </p>
                     </div>
                 </div>
                 <div class="mt-5 flex justify-center gap-3 sm:mt-4">
                     <button type="button" @click="deleteSubjectModal = false"
-                        class="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm">
+                        class="mt-0 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm md:mt-3">
                         Batal
                     </button>
                     <button type="button" wire:click="deleteSubjectClass" @click="deleteSubjectModal = false"
