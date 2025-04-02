@@ -30,7 +30,7 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./
-        server-dir: /public_html/dev/  # Sesuaikan dengan path subdomain Anda
+        server-dir: /home/u218607847/domains/smknurussalam.com/public_html/dev
         exclude: |
           **/.git*
           **/.git*/**
