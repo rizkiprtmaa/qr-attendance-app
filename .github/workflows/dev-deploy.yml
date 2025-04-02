@@ -12,7 +12,9 @@ jobs:
       with:
         fetch-depth: 2 
     - name: Build assets
-      run: npm install && npm run build
+      run: |
+        npm install
+        npm run build
 
     - name: Install PHP and Composer
       uses: shivammathur/setup-php@v2
