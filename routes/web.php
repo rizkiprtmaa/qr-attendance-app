@@ -2,10 +2,13 @@
 
 use App\Models\User;
 use Livewire\Volt\Volt;
+use App\Models\SubjectClassSession;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AttendanceController;
-use App\Models\SubjectClassSession;
+use App\Http\Controllers\ClassReportController;
+use App\Http\Controllers\AttendancePdfController;
+use App\Http\Controllers\SubstituteTeacherController;
 
 Route::view('/', 'welcome');
 
@@ -85,7 +88,44 @@ Route::view('permission-submission', 'teacher.permission')->middleware(['auth', 
 Route::view('permission-management', 'admin.permission-submission.index')->middleware(['auth', 'verified', 'role:admin'])->name('permission-management');
 Route::view('class-management', 'teacher.student-class.index')->middleware(['auth', 'verified', 'role:teacher'])->name('class-management');
 
+// Kelas Pengganti
+Route::view('/teacher/substitute-classes', 'teacher.substitution.index')->middleware(['auth', 'verified', 'role:teacher'])
+    ->name('teacher.substitute');
 
+
+Route::view('/substitution-request', 'admin.substitution.index')->middleware(['auth', 'verified', 'role:admin'])
+    ->name('substitution-request');
+
+// Route::view('/teacher/substitute-classes/{subjectClass}', 'teacher.substitution.index')
+//     ->name('substitute.class')
+//     ->middleware('can:manage-substitute-class,subjectClass');
+
+// routes/web.php
+// Route::middleware(['auth', 'role:teacher'])->group(function () {
+//     // Manajemen kelas pengganti (menggunakan gate)
+//     Route::get('/teacher/substitute/class/{subjectClass}', Volt::class)
+//         ->name('substitute.class')
+//         ->middleware('can:manage-substitute-class,subjectClass');
+
+//     // Manajemen presensi untuk sesi kelas pengganti
+//     Route::get('/teacher/session/{session}/attendance', Volt::class)
+//         ->name('session.attendance');
+// });
+
+Volt::route('/teacher/substitute/class/{subjectClass}', 'teacher.substitution-class-management')
+    ->middleware(['auth', 'verified', 'role:teacher'])
+    ->name('substitute.class');
+
+
+Volt::route('/teacher/session/{session}/attendance', 'teacher.session-attendance-management')->middleware(['auth', 'verified', 'role:teacher'])
+    ->name('substitute.attendance');
+
+
+Route::get('/class/{subjectClass}/agenda-report', [ClassReportController::class, 'generateAgendaReport'])->middleware(['auth', 'verified', 'role:admin|teacher'])
+    ->name('agenda.report');
+
+Route::get('/class/{subjectClass}/attendance-report', [ClassReportController::class, 'generateAttendanceReport'])
+    ->name('attendance.report');
 
 
 require __DIR__ . '/auth.php';

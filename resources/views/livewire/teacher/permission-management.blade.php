@@ -111,22 +111,19 @@ new class extends Component {
 }; ?>
 
 <div x-data="{ modalCreateOpen: false }">
-    <div class="mb-6 pt-10 md:pt-0">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-medium text-gray-800">Pengajuan Izin</h2>
+
+
+    <!-- Daftar Pengajuan Izin -->
+    <div class="mt-6 flex flex-row items-center justify-between rounded-lg bg-white shadow">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Riwayat Pengajuan</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">Daftar pengajuan izin yang telah Anda buat</p>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
             <button x-on:click="modalCreateOpen = true"
                 class="rounded-md bg-blue-600 px-4 py-2 font-inter text-sm text-white shadow-md hover:bg-blue-700">
                 Buat Pengajuan
             </button>
-        </div>
-        <p class="text-sm text-gray-600">Ajukan izin/sakit untuk presensi QR dan kelas</p>
-    </div>
-
-    <!-- Daftar Pengajuan Izin -->
-    <div class="mt-6 rounded-lg bg-white shadow">
-        <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg font-medium leading-6 text-gray-900">Riwayat Pengajuan</h3>
-            <p class="mt-1 max-w-2xl text-sm text-gray-500">Daftar pengajuan izin yang telah Anda buat</p>
         </div>
 
 
