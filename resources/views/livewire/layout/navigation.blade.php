@@ -16,10 +16,16 @@ new class extends Component {
     <!-- Sidebar -->
     <div x-cloak :class="{ '-translate-x-full': !open, 'translate-x-0': open }"
         class="fixed inset-y-0 left-0 z-40 min-h-screen w-64 transform rounded-r-3xl bg-white text-slate-900 transition duration-300 ease-in-out md:static md:block md:translate-x-0">
-        <div class="flex items-center justify-between p-4">
-            <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center justify-end">
+        <div class="flex items-center justify-between px-5 py-5">
+            {{-- <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center justify-end">
                 <span class="ml-4 mt-2 text-lg font-medium">SMK Nurussalam</span>
-            </a>
+            </a> --}}
+
+            <x-application-logo class="h-8 w-auto" />
+
+            <img src="{{ auth()->user()->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
+                alt="{{ auth()->user()->name }}" class="hidden h-10 w-10 rounded-md object-cover md:block">
+
             <button @click="open = !open" x-show="open"
                 class="z-50 ml-2 mt-2 rounded-full bg-white p-2 text-gray-900 focus:outline-none md:hidden">
                 <svg height="512" class="h-4 w-4" viewBox="0 0 24 24" width="512"
@@ -34,6 +40,8 @@ new class extends Component {
 
         </div>
 
+        <div class="px-4"><span class="flex w-full border-b border-dashed border-gray-200/80"
+                style="border-style: dashed"></span></div>
         <nav class="mt-4">
             <div class="px-4">
                 <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
@@ -91,6 +99,18 @@ new class extends Component {
                         </svg>
                         {{ __('Manajemen Izin') }}
                     </x-sidebar-link>
+                    <x-sidebar-link :href="route('substitution-request')" :active="request()->routeIs('substitution-request')" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                        </svg>
+
+
+
+
+                        {{ __('Guru Pengganti') }}
+                    </x-sidebar-link>
 
                     <x-sidebar-link :href="route('settings')" :active="request()->routeIs('settings')" wire:navigate>
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +130,7 @@ new class extends Component {
                                 d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
                         </svg>
 
-                        </svg>
+
                         {{ __('Presensi Kelas') }}
                     </x-sidebar-link>
                     <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
@@ -121,7 +141,7 @@ new class extends Component {
                         </svg>
 
 
-                        </svg>
+
                         {{ __('Pengajuan Izin') }}
                     </x-sidebar-link>
                     <x-sidebar-link :href="route('class-management')" :active="request()->routeIs('class-management')" wire:navigate>
@@ -133,8 +153,21 @@ new class extends Component {
 
 
 
-                        </svg>
+
                         {{ __('Kelola Siswa') }}
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('teacher.substitute')" :active="request()->routeIs(['teacher.substitute', 'substitute.attendance', 'substitute.class'])" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
+                        </svg>
+
+
+
+
+
+                        {{ __('Kelas Pengganti') }}
                     </x-sidebar-link>
                 @endrole
                 @role('student')
@@ -151,12 +184,12 @@ new class extends Component {
                     </x-sidebar-link>
                 @endrole
                 <x-sidebar-link :href="route('profile')" :active="request()->routeIs('profile')" wire:navigate>
-                    <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="mr-3 h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
+
                     {{ __('Profile') }}
                 </x-sidebar-link>
             </div>
@@ -166,7 +199,7 @@ new class extends Component {
         <div class="absolute bottom-0 w-full p-4">
             <div class="flex items-center rounded-full bg-gray-300 px-4 py-3">
                 <img src="{{ auth()->user()->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
-                    alt="{{ auth()->user()->name }}" class="mr-3 h-10 w-10 rounded-full">
+                    alt="{{ auth()->user()->name }}" class="mr-3 h-10 w-10 rounded-full object-cover">
                 <div>
                     <p class="text-inter text-sm font-medium">{{ auth()->user()->name }}</p>
                     <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>

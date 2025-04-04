@@ -40,7 +40,7 @@ new class extends Component {
     public function render(): mixed
     {
         // Query dasar untuk subject classes
-        $query = SubjectClass::where('subject_classes.teacher_id', $this->teacherId)->with('classes.major', 'classes.student');
+        $query = SubjectClass::where('subject_classes.user_id', $this->teacherId)->with('classes.major', 'classes.student');
 
         // Tambahkan pencarian jika ada
         if ($this->search) {
@@ -253,7 +253,7 @@ new class extends Component {
             SubjectClass::create([
                 'class_name' => $this->className,
                 'class_code' => $this->classCode,
-                'teacher_id' => $this->teacherId,
+                'user_id' => $this->teacherId,
                 'classes_id' => $this->classId,
             ]);
 

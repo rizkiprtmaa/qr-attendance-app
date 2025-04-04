@@ -23,9 +23,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
-
-        if (config('app.env') === 'local') {
-            URL::forceScheme('https');
-        }
+        \Carbon\Carbon::setLocale('id');
     }
 }

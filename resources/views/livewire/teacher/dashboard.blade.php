@@ -178,7 +178,7 @@ new class extends Component {
 
         // 3. Load subject classes dan SEMUA relasinya sekaligus (mengurangi >10 query)
         $this->subjectClass = SubjectClass::with(['classes.major', 'classes.student'])
-            ->where('teacher_id', $this->teacherId)
+            ->where('user_id', $this->teacherId)
             ->get();
 
         // 4. Load semua subject class sessions dan SEMUA relasi untuk perhitungan statistik (mengurangi >5 query)
@@ -850,7 +850,7 @@ new class extends Component {
                             </svg>
                         </div>
                         <div class="mt-2 md:mt-0">
-                            <p class="text-xs font-medium text-gray-500 md:text-sm">Siswa yang Perlu Perhatian</p>
+                            <p class="text-xs font-medium text-gray-500 md:text-sm">Perlu Perhatian</p>
                             <p class="text-2xl font-bold text-gray-900">
                                 {{ $attendanceStats['students_needing_attention'] }}</p>
                             <p class="mt-1 text-xs text-gray-500">Kehadiran < 70%</p>

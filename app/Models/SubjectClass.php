@@ -24,17 +24,6 @@ class SubjectClass extends Model
         return $this->belongsTo(Major::class);
     }
 
-    // Guru utama
-    public function mainTeacher()
-    {
-        return $this->belongsTo(User::class, 'teacher_id');
-    }
-
-    // Guru pengganti (bisa multiple)
-    public function substituteTeachers()
-    {
-        return $this->belongsToMany(User::class, 'substitute_teachers', 'subject_class_id', 'user_id');
-    }
 
     // Metode untuk mengecek apakah user bisa mengakses kelas
     public function canManageClass(User $user)
@@ -45,6 +34,12 @@ class SubjectClass extends Model
 
     public function teacher()
     {
-        return $this->hasMany(User::class, 'teacher_id');
+        return $this->belongsTo(Teacher::class);
+    }
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

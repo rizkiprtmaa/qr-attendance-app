@@ -28,6 +28,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'profile_photo_path',
     ];
 
     /**
@@ -97,5 +98,15 @@ class User extends Authenticatable
     public function getQrScanUrl()
     {
         return route('attendance.scan', ['token' => $this->qr_token]);
+    }
+
+    public function getProfilePhotoUrlAttribute()
+    {
+        if ($this->profile_photo_path) {
+            return Storage::url($this->profile_photo_path);
+        }
+
+        // Fallback ke Gravatar atau avatar default
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
     }
 }

@@ -5,6 +5,7 @@ use App\Models\SubjectClassSession;
 use App\Models\SubjectClassAttendance;
 use App\Models\Student;
 use Livewire\Attributes\Layout;
+use Illuminate\Support\Facades\Storage;
 
 new #[Layout('layouts.app')] class extends Component {
     public $session;
@@ -33,6 +34,7 @@ new #[Layout('layouts.app')] class extends Component {
         $this->classDate = $session->class_date;
         $this->startTime = $session->start_time;
         $this->endTime = $session->end_time;
+
         $this->subjectClassId = $session->subject_class_id;
 
         // Get class details
@@ -376,9 +378,11 @@ new #[Layout('layouts.app')] class extends Component {
                             x-transition:leave-end="transform opacity-0 scale-95">
                             <div class="py-1">
                                 <a href="#" wire:click.prevent="bulkUpdateStatus('hadir')"
+                                    @click="bulkActionOpen = false"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua
                                     Hadir</a>
                                 <a href="#" wire:click.prevent="bulkUpdateStatus('tidak_hadir')"
+                                    @click="bulkActionOpen = false"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua Tidak
                                     Hadir</a>
                             </div>
@@ -397,15 +401,9 @@ new #[Layout('layouts.app')] class extends Component {
                             <div class="flex items-center px-4 py-4 sm:px-6">
                                 <div class="flex min-w-0 flex-1 items-center">
                                     <div class="flex-shrink-0">
-                                        <div
-                                            class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                class="h-6 w-6">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                            </svg>
-                                        </div>
+                                        <img src="{{ $attendance['student']['user']['profile_photo_path'] ? Storage::url($attendance['student']['user']['profile_photo_path']) : 'https://ui-avatars.com/api/?name=' . urlencode($attendance['student']['user']['name']) }}"
+                                            alt="{{ $attendance['student']['user']['name'] }}"
+                                            class="mr-3 h-10 w-10 rounded-full object-cover">
                                     </div>
                                     <div class="ml-4 flex flex-col">
                                         <div class="truncate whitespace-nowrap text-sm font-medium text-gray-900">

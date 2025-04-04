@@ -212,10 +212,15 @@ new #[Layout('layouts.app')] class extends Component {
             // Reload sessions
             $this->loadSessions();
 
-            // Show success message
-            session()->flash('success', 'Sesi pertemuan berhasil dihapus');
+            $this->dispatch('show-toast', [
+                'type' => 'success',
+                'message' => 'Sesi pertemuan berhasil dihapus',
+            ]);
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menghapus sesi pertemuan: ' . $e->getMessage());
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Gagal menghapus sesi: ' . $e->getMessage(),
+            ]);
         }
     }
 
@@ -334,43 +339,51 @@ new #[Layout('layouts.app')] class extends Component {
 }">
 
 
-    <!-- Success Message Toast -->
-    @if (session()->has('success'))
-        <div id="toast-success" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)"
-            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg bg-white p-4 text-gray-500 shadow"
-            role="alert">
-            <div
-                class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
-                <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
-                    viewBox="0 0 20 20">
-                    <path
-                        d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                </svg>
-                <span class="sr-only">Succes icon</span>
-            </div>
-            <div class="ml-3 text-sm font-normal">{{ session('success') }}</div>
-            <button type="button" @click="show = false"
-                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300"
-                aria-label="Close">
-                <span class="sr-only">Close</span>
-                <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
-                    viewBox="0 0 14 14">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                </svg>
-            </button>
-        </div>
-    @endif
+    <!-- Toast Notification Component -->
+    <div x-data="{
+        toastMessage: '',
+        toastType: '',
+        showToast: false
+    }"
+        x-on:show-toast.window="
+            const data = $event.detail[0] || $event.detail;
+            toastMessage = data.message;
+            toastType = data.type;
+            showToast = true;
+            setTimeout(() => showToast = false, 3000)
+         ">
 
-    <!-- Error Message Toast -->
-    @if (session()->has('error'))
-        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
-            class="fixed bottom-5 right-5 z-10 rounded-md border border-red-400 bg-red-100 px-4 py-3 text-red-700"
+        <div x-cloak x-show="showToast" x-transition.opacity
+            :class="toastType === 'success' ? 'bg-white text-gray-500' : 'bg-red-100 text-red-700'"
+            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg p-4 shadow"
             role="alert">
-            {{ session('error') }}
-            <button type="button" @click="show = false"
-                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg p-1.5 text-red-500 hover:bg-red-200"
-                aria-label="Close">
+
+            <template x-if="toastType === 'success'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <template x-if="toastType === 'error'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <div class="ml-3 text-sm font-normal" x-text="toastMessage"></div>
+
+            <button type="button" @click="showToast = false"
+                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300">
                 <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                     viewBox="0 0 14 14">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -378,22 +391,35 @@ new #[Layout('layouts.app')] class extends Component {
                 </svg>
             </button>
         </div>
-    @endif
+    </div>
 
     <div class="mx-auto mt-10 max-w-7xl px-2 py-3 md:mt-0 md:px-4 lg:px-8">
         <!-- Header Card -->
         <div class="flex w-full flex-col justify-between rounded-lg bg-white p-6 shadow-md md:flex-row md:items-center">
-            <div class="flex flex-row items-center justify-between gap-2 md:flex-col">
-                <div class="flex flex-col">
-                    <p class="flex flex-col font-inter text-xl font-medium">{{ $subjectName }}</p>
+            <div
+                class="flex flex-row items-center justify-between gap-2 text-start md:flex-col md:items-center md:justify-start">
+                <div class="flex flex-col gap-3">
+                    <p class="flex flex-row justify-start text-start font-inter text-xl font-medium">{{ $subjectName }}
+                    </p>
                     <span
-                        class="mt-2 inline-flex items-center rounded-full bg-blue-100 px-3 py-2 text-xs font-medium text-blue-800 md:py-2">
+                        class="mt-2 inline-flex items-center rounded-full bg-blue-100 px-3 py-2 text-xs font-medium text-blue-800 md:hidden md:py-2">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="h-4 w-4">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
                         </svg>
                         <span class="ml-1 text-xs">
+                            {{ $className }} - {{ $major }}
+                        </span>
+                    </span>
+                    <span
+                        class="hidden items-center rounded-full bg-blue-100 px-3 py-0 text-sm font-medium text-blue-800 md:inline-flex md:py-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
+                        </svg>
+                        <span class="ml-1">
                             {{ $className }} - {{ $major }}
                         </span>
                     </span>
@@ -406,17 +432,7 @@ new #[Layout('layouts.app')] class extends Component {
                             d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                     </svg>
                 </div>
-                <span
-                    class="hidden items-center rounded-full bg-blue-100 px-3 py-0 text-sm font-medium text-blue-800 md:inline-flex md:py-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="h-4 w-4">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
-                    </svg>
-                    <span class="ml-1">
-                        {{ $className }} - {{ $major }}
-                    </span>
-                </span>
+
             </div>
             <div class="mt-4 hidden grid-cols-1 gap-3 sm:grid-cols-3 md:mt-0 md:grid">
                 <div class="flex w-full flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -468,7 +484,7 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
 
         <!-- Action Button -->
-        <div class="mt-5 flex justify-start">
+        <div class="mt-5 flex flex-row items-center justify-between">
             <button @click="createSessionModal = true"
                 class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -477,6 +493,26 @@ new #[Layout('layouts.app')] class extends Component {
                 </svg>
                 Buat Pertemuan
             </button>
+            <div class="flex flex-row items-center gap-2">
+                <a href="{{ route('agenda.report', $subjectClass->id) }}" target="_blank"
+                    class="inline-flex items-center rounded-full border border-transparent bg-blue-600 px-4 py-2 font-inter text-xs font-medium text-white ring-blue-300 transition duration-150 ease-in-out hover:bg-blue-700 focus:border-blue-900 focus:outline-none focus:ring active:bg-blue-900 disabled:opacity-25">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Unduh Agenda KBM
+                </a>
+                <a href="{{ route('attendance.report', $subjectClass->id) }}" target="_blank"
+                    class="flex items-center rounded-full border border-transparent bg-green-600 px-4 py-2 font-inter text-xs font-medium text-white ring-green-300 transition duration-150 ease-in-out hover:bg-green-700 focus:border-green-900 focus:outline-none focus:ring active:bg-green-900 disabled:opacity-25">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    Unduh Laporan Kehadiran
+                </a>
+            </div>
         </div>
 
         <!-- Sessions List as Table -->
