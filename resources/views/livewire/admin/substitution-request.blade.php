@@ -391,11 +391,13 @@ new class extends Component {
                         <tr class="@if ($request->status === 'pending') bg-yellow-50 @endif">
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
                                 <div class="font-medium text-gray-900">{{ $request->substituteTeacher->name }}</div>
-                                <div class="text-gray-500">{{ $request->substituteTeacher->email }}</div>
+                                <div class="text-xs text-gray-500">{{ $request->substituteTeacher->teacher->nuptk }}
+                                </div>
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                 <div class="font-medium text-gray-900">{{ $request->user->name }}</div>
-                                <div class="text-gray-500">{{ $request->user->email }}</div>
+                                <div class="text-xs text-gray-500">{{ $request->substituteTeacher->teacher->nuptk }}
+                                </div>
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                 {{ $request->subjectClass->class_name }}

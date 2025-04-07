@@ -2,10 +2,10 @@
     <x-slot name="header">
         <div class="flex flex-row items-center justify-between">
             <div class="flex flex-col gap-2">
-                <h2 class="font-inter text-xl font-medium leading-tight text-gray-800">
-                    {{ __('Persetujuan Guru Pengganti') }}
+                <h2 class="font-inter text-3xl font-semibold leading-tight text-slate-900">
+                    {{ __('Guru Pengganti') }}
                 </h2>
-                <p class="font-inter text-xs text-gray-600 md:text-sm">Kelola dan tinjau permintaan penggantian guru</p>
+                <p class="font-inter text-xs text-gray-600 md:text-sm">Kelola dan tinjau permintaan penggantian guru.</p>
             </div>
             <div>
                 <p class="flex flex-row items-center gap-1 font-inter text-xs font-medium text-gray-600 md:text-sm">
@@ -25,7 +25,7 @@
 
 
     <div class="py-6">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
             <livewire:admin.substitution-request />
 
         </div>

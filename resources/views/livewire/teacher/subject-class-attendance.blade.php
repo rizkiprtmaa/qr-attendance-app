@@ -77,7 +77,7 @@ new #[Layout('layouts.app')] class extends Component {
             $attendance = SubjectClassAttendance::findOrFail($attendanceId);
             $attendance->update([
                 'status' => $status,
-                'check_in_time' => $status === 'hadir' ? now() : $attendance->check_in_time,
+                'check_in_time' => $status === 'hadir' ? now()->timezone('asia/jakarta') : $attendance->check_in_time,
             ]);
 
             // Reload attendances after update
@@ -95,7 +95,7 @@ new #[Layout('layouts.app')] class extends Component {
         try {
             SubjectClassAttendance::where('subject_class_session_id', $this->sessionId)->update([
                 'status' => $status,
-                'check_in_time' => $status === 'hadir' ? now() : null,
+                'check_in_time' => $status === 'hadir' ? now()->timezone('asia/jakarta') : null,
             ]);
 
             // Reload attendances after bulk update
@@ -416,8 +416,9 @@ new #[Layout('layouts.app')] class extends Component {
                                 </div>
                                 <div class="ml-4 hidden flex-shrink-0 md:flex">
                                     @if ($attendance['check_in_time'])
-                                        <span
-                                            class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($attendance['check_in_time'])->timezone('Asia/Jakarta')->format('H:i') }}</span>
+                                        <span class="text-sm text-gray-500">
+                                            {{ $attendance['check_in_time']->translatedFormat('H:i') }}
+                                        </span>
                                     @endif
                                 </div>
                                 <div class="ml-4">

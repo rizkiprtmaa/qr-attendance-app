@@ -400,88 +400,244 @@ new class extends Component {
 
     <!-- Statistik Kehadiran Hari Ini -->
     <div class="mt-8">
-        <h2 class="text-lg font-medium text-gray-900">Statistik Kehadiran Hari Ini
-            ({{ Carbon::now()->format('d F Y') }})</h2>
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
-            <!-- Kehadiran Hari Ini -->
-            <div class="overflow-hidden rounded-lg bg-blue-50 shadow">
+        <h2 class="flex flex-row items-center gap-2 font-inter text-lg font-medium text-gray-900"><svg id="fi_3176395"
+                class="h-6 w-6" enable-background="new 0 0 497 497" height="512" viewBox="0 0 497 497" width="512"
+                xmlns="http://www.w3.org/2000/svg">
+                <g>
+                    <path
+                        d="m472 80v77h-447v-77c0-11.51 6.48-21.51 16-26.53 4.18-2.22 8.94-3.47 14-3.47h387c11.51 0 21.51 6.48 26.53 16 2.22 4.18 3.47 8.94 3.47 14z"
+                        fill="#fd646f"></path>
+                    <path d="m145 50v56c0 5.52-4.48 10-10 10h-46c-5.52 0-10-4.48-10-10v-56z" fill="#fc4755"></path>
+                    <path d="m402 50v56c0 5.52-4.48 10-10 10h-46c-5.52 0-10-4.48-10-10v-56z" fill="#fc4755"></path>
+                    <path d="m41 53.47v103.53h-16v-77c0-11.51 6.48-21.51 16-26.53z" fill="#fc4755"></path>
+                    <g fill="#e6e6e6">
+                        <path
+                            d="m107 216.82h51.45c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-51.45c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m107 293.27h51.45c2.761 0 5 2.239 5 5v51.46c0 2.761-2.239 5-5 5h-51.45c-2.761 0-5-2.239-5-5v-51.46c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m107 369.73h51.45c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-51.45c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m183.45 216.82h52.55c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-52.55c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m183.45 293.27h52.55c2.761 0 5 2.239 5 5v51.46c0 2.761-2.239 5-5 5h-52.55c-2.761 0-5-2.239-5-5v-51.46c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m183.45 369.73h52.55c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-52.55c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m261 216.82h52.55c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-52.55c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m261 293.27h52.55c2.761 0 5 2.239 5 5v51.46c0 2.761-2.239 5-5 5h-52.55c-2.761 0-5-2.239-5-5v-51.46c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m261 369.73h52.55c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-52.55c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m395 221.82v51.45c0 2.761-2.239 5-5 5h-51.45c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5h51.45c2.761 0 5 2.239 5 5z">
+                        </path>
+                        <path
+                            d="m338.55 293.27h51.45c2.761 0 5 2.239 5 5v51.46c0 2.761-2.239 5-5 5h-51.45c-2.761 0-5-2.239-5-5v-51.46c0-2.761 2.239-5 5-5z">
+                        </path>
+                        <path
+                            d="m338.55 369.73h51.45c2.761 0 5 2.239 5 5v51.45c0 2.761-2.239 5-5 5h-51.45c-2.761 0-5-2.239-5-5v-51.45c0-2.761 2.239-5 5-5z">
+                        </path>
+                    </g>
+                    <path d="m25 150v317c0 16.57 13.43 30 30 30h387c16.57 0 30-13.43 30-30v-317z" fill="#f5f5f5"></path>
+                    <path
+                        d="m145 10v80c0 5.52-4.48 10-10 10h-30c-5.52 0-10-4.48-10-10v-80c0-5.52 4.48-10 10-10h30c5.52 0 10 4.48 10 10z"
+                        fill="#50758d"></path>
+                    <path d="m102 216.82h61.45v61.45h-61.45z" fill="#ffac5c"></path>
+                    <path d="m333.55 216.82h61.45v61.45h-61.45z" fill="#ffac5c"></path>
+                    <path d="m178.45 216.82h62.55v61.45h-62.55z" fill="#ffac5c"></path>
+                    <path d="m102 293.27h61.45v61.46h-61.45z" fill="#ffac5c"></path>
+                    <path d="m333.55 293.27h61.45v61.46h-61.45z" fill="#e6e6e6"></path>
+                    <path d="m178.45 293.27h62.55v61.46h-62.55z" fill="#ffac5c"></path>
+                    <path d="m102 369.73h61.45v61.45h-61.45z" fill="#e6e6e6"></path>
+                    <path d="m333.55 369.73h61.45v61.45h-61.45z" fill="#e6e6e6"></path>
+                    <path d="m178.45 369.73h62.55v61.45h-62.55z" fill="#e6e6e6"></path>
+                    <path d="m256 216.82h62.55v61.45h-62.55z" fill="#ffac5c"></path>
+                    <path d="m256 293.27h62.55v61.46h-62.55z" fill="#ffac5c"></path>
+                    <path d="m256 369.73h62.55v61.45h-62.55z" fill="#e6e6e6"></path>
+                    <path
+                        d="m402 10v80c0 5.52-4.48 10-10 10h-30c-5.52 0-10-4.48-10-10v-80c0-5.52 4.48-10 10-10h30c5.52 0 10 4.48 10 10z"
+                        fill="#50758d"></path>
+                    <path
+                        d="m25 150v317c0 16.57 13.43 30 30 30h11.08c-13.99-2.54-24.58-14.78-24.58-29.5v-296.28c1.13-3.05 4.06-5.22 7.5-5.22h423v-15.5-.5z"
+                        fill="#e6e6e6"></path>
+                    <path d="m121 100h-16c-5.52 0-10-4.48-10-10v-80c0-5.52 4.48-10 10-10h6v90c0 5.52 4.48 10 10 10z"
+                        fill="#2b597f"></path>
+                    <path d="m378 100h-16c-5.52 0-10-4.48-10-10v-80c0-5.52 4.48-10 10-10h6v90c0 5.52 4.48 10 10 10z"
+                        fill="#2b597f"></path>
+                </g>
+            </svg>Statistik Kehadiran Hari Ini
+        </h2>
+        <div class="mt-5 grid grid-cols-1 gap-6 md:grid-cols-3">
+            <!-- Card: Ringkasan Kehadiran -->
+            <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="border-b border-blue-100 bg-blue-50 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-blue-800">Ringkasan Kehadiran</h3>
+                </div>
                 <div class="p-4">
-                    <h3 class="text-sm font-medium text-blue-700">Total Kehadiran</h3>
-                    <p class="mt-1 text-2xl font-semibold text-blue-900">{{ number_format($todayAttendance) }}</p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <!-- Tepat Waktu -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Tepat Waktu</p>
+                            <p class="text-2xl font-bold text-blue-600">
+                                {{ number_format($todayAttendanceStats['hadir']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                @if (isset($todayAttendanceStats['hadir_yesterday']) &&
+                                        $todayAttendanceStats['hadir'] > $todayAttendanceStats['hadir_yesterday']
+                                )
+                                    <span
+                                        class="text-xs text-green-600">+{{ $todayAttendanceStats['hadir'] - $todayAttendanceStats['hadir_yesterday'] }}</span>
+                                @elseif(isset($todayAttendanceStats['hadir_yesterday']) &&
+                                        $todayAttendanceStats['hadir'] < $todayAttendanceStats['hadir_yesterday']
+                                )
+                                    <span
+                                        class="text-xs text-red-600">-{{ $todayAttendanceStats['hadir_yesterday'] - $todayAttendanceStats['hadir'] }}</span>
+                                @else
+                                    <span class="text-xs text-gray-500">—</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Terlambat -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Terlambat</p>
+                            <p class="text-2xl font-bold text-amber-500">
+                                {{ number_format($todayAttendanceStats['terlambat']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                @if (isset($todayAttendanceStats['terlambat_yesterday']) &&
+                                        $todayAttendanceStats['terlambat'] > $todayAttendanceStats['terlambat_yesterday']
+                                )
+                                    <span
+                                        class="text-xs text-red-600">+{{ $todayAttendanceStats['terlambat'] - $todayAttendanceStats['terlambat_yesterday'] }}</span>
+                                @elseif(isset($todayAttendanceStats['terlambat_yesterday']) &&
+                                        $todayAttendanceStats['terlambat'] < $todayAttendanceStats['terlambat_yesterday']
+                                )
+                                    <span
+                                        class="text-xs text-green-600">-{{ $todayAttendanceStats['terlambat_yesterday'] - $todayAttendanceStats['terlambat'] }}</span>
+                                @else
+                                    <span class="text-xs text-gray-500">—</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Total Kehadiran -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Total</p>
+                            <p class="text-2xl font-bold text-indigo-600">
+                                {{ number_format($todayAttendanceStats['datang']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                @if (isset($todayAttendanceStats['datang_yesterday']) &&
+                                        $todayAttendanceStats['datang'] > $todayAttendanceStats['datang_yesterday']
+                                )
+                                    <span
+                                        class="text-xs text-green-600">+{{ $todayAttendanceStats['datang'] - $todayAttendanceStats['datang_yesterday'] }}</span>
+                                @elseif(isset($todayAttendanceStats['datang_yesterday']) &&
+                                        $todayAttendanceStats['datang'] < $todayAttendanceStats['datang_yesterday']
+                                )
+                                    <span
+                                        class="text-xs text-red-600">-{{ $todayAttendanceStats['datang_yesterday'] - $todayAttendanceStats['datang'] }}</span>
+                                @else
+                                    <span class="text-xs text-gray-500">—</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Datang -->
-            <div class="overflow-hidden rounded-lg bg-green-50 shadow">
+            <!-- Card: Ringkasan Kepulangan -->
+            <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="border-b border-purple-100 bg-purple-50 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-purple-800">Ringkasan Kepulangan</h3>
+                </div>
                 <div class="p-4">
-                    <h3 class="text-sm font-medium text-green-700">Datang</h3>
-                    <p class="mt-1 text-2xl font-semibold text-green-900">
-                        {{ number_format($todayAttendanceStats['datang']) }}</p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <!-- Pulang -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Pulang</p>
+                            <p class="text-2xl font-bold text-purple-600">
+                                {{ number_format($todayAttendanceStats['pulang']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                <span class="text-xs text-gray-500">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Pulang Cepat -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Pulang Cepat</p>
+                            <p class="text-2xl font-bold text-emerald-600">
+                                {{ number_format($todayAttendanceStats['pulang_cepat']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                <span class="text-xs text-gray-500">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Persentase -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">% Pulang</p>
+                            @php
+                                $pulangPercentage =
+                                    $todayAttendanceStats['datang'] > 0
+                                        ? round(
+                                            ($todayAttendanceStats['pulang'] / $todayAttendanceStats['datang']) * 100,
+                                        )
+                                        : 0;
+                            @endphp
+                            <p class="text-2xl font-bold text-purple-800">{{ $pulangPercentage }}%</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                <span class="text-xs text-gray-500">dari kehadiran</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Pulang -->
-            <div class="overflow-hidden rounded-lg bg-purple-50 shadow">
-                <div class="p-4">
-                    <h3 class="text-sm font-medium text-purple-700">Pulang</h3>
-                    <p class="mt-1 text-2xl font-semibold text-purple-900">
-                        {{ number_format($todayAttendanceStats['pulang']) }}</p>
+            <!-- Card: Ringkasan Ketidakhadiran -->
+            <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="border-b border-red-100 bg-red-50 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-red-800">Ringkasan Ketidakhadiran</h3>
                 </div>
-            </div>
-
-            <!-- Hadir -->
-            <div class="overflow-hidden rounded-lg bg-indigo-50 shadow">
                 <div class="p-4">
-                    <h3 class="text-sm font-medium text-indigo-700">Hadir</h3>
-                    <p class="mt-1 text-2xl font-semibold text-indigo-900">
-                        {{ number_format($todayAttendanceStats['hadir']) }}</p>
-                </div>
-            </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <!-- Tanpa Keterangan -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Tanpa Ket.</p>
+                            <p class="text-2xl font-bold text-red-600">
+                                {{ number_format($todayAttendanceStats['tidak_hadir']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                <span class="text-xs text-gray-500">—</span>
+                            </div>
+                        </div>
 
-            <!-- Terlambat -->
-            <div class="overflow-hidden rounded-lg bg-amber-50 shadow">
-                <div class="p-4">
-                    <h3 class="text-sm font-medium text-amber-700">Terlambat</h3>
-                    <p class="mt-1 text-2xl font-semibold text-amber-900">
-                        {{ number_format($todayAttendanceStats['terlambat']) }}</p>
-                </div>
-            </div>
+                        <!-- Izin -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Izin</p>
+                            <p class="text-2xl font-bold text-sky-600">
+                                {{ number_format($todayAttendanceStats['izin']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                <span class="text-xs text-gray-500">—</span>
+                            </div>
+                        </div>
 
-            <!-- Tidak Hadir -->
-            <div class="overflow-hidden rounded-lg bg-red-50 shadow">
-                <div class="p-4">
-                    <h3 class="text-sm font-medium text-red-700">Tidak Hadir</h3>
-                    <p class="mt-1 text-2xl font-semibold text-red-900">
-                        {{ number_format($todayAttendanceStats['tidak_hadir']) }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <!-- Izin -->
-            <div class="overflow-hidden rounded-lg bg-sky-50 shadow">
-                <div class="p-4">
-                    <h3 class="text-sm font-medium text-sky-700">Izin</h3>
-                    <p class="mt-1 text-2xl font-semibold text-sky-900">
-                        {{ number_format($todayAttendanceStats['izin']) }}</p>
-                </div>
-            </div>
-
-            <!-- Sakit -->
-            <div class="overflow-hidden rounded-lg bg-pink-50 shadow">
-                <div class="p-4">
-                    <h3 class="text-sm font-medium text-pink-700">Sakit</h3>
-                    <p class="mt-1 text-2xl font-semibold text-pink-900">
-                        {{ number_format($todayAttendanceStats['sakit']) }}</p>
-                </div>
-            </div>
-
-            <!-- Pulang Cepat -->
-            <div class="overflow-hidden rounded-lg bg-emerald-50 shadow">
-                <div class="p-4">
-                    <h3 class="text-sm font-medium text-emerald-700">Pulang Cepat</h3>
-                    <p class="mt-1 text-2xl font-semibold text-emerald-900">
-                        {{ number_format($todayAttendanceStats['pulang_cepat']) }}</p>
+                        <!-- Sakit -->
+                        <div class="text-center">
+                            <p class="mb-1 text-xs text-gray-500">Sakit</p>
+                            <p class="text-2xl font-bold text-pink-600">
+                                {{ number_format($todayAttendanceStats['sakit']) }}</p>
+                            <div class="mt-1 flex items-center justify-center">
+                                <span class="text-xs text-gray-500">—</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -489,7 +645,121 @@ new class extends Component {
 
     <!-- Kelas Berlangsung -->
     <div class="mt-8">
-        <h2 class="text-lg font-medium text-gray-900">Sesi Kelas Sedang Berlangsung</h2>
+        <h2 class="flex flex-row items-center gap-2 font-inter text-lg font-medium text-gray-900"><svg
+                clip-rule="evenodd" class="h-6 w-6" fill-rule="evenodd" stroke-linejoin="round"
+                stroke-miterlimit="2" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="fi_17179297">
+                <path
+                    d="m512 49.92c0-9.89-8.03-17.92-17.92-17.92h-476.16c-9.89 0-17.92 8.03-17.92 17.92v412.16c0 9.89 8.03 17.92 17.92 17.92h476.16c9.89 0 17.92-8.03 17.92-17.92z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m512 49.92v412.16c0 9.89-8.03 17.92-17.92 17.92h-476.16c-9.89 0-17.92-8.03-17.92-17.92v-412.16c0-9.89 8.03-17.92 17.92-17.92h476.16c9.89 0 17.92 8.03 17.92 17.92zm-4.167 0c0-7.591-6.162-13.753-13.753-13.753h-476.16c-7.591 0-13.753 6.162-13.753 13.753v412.16c0 7.591 6.162 13.753 13.753 13.753h476.16c7.591 0 13.753-6.162 13.753-13.753z"
+                    fill="#366138"></path>
+                <path d="m0 49.92c0-9.89 8.03-17.92 17.92-17.92h476.16c9.89 0 17.92 8.03 17.92 17.92v14.08h-512z"
+                    fill="#c6dcab"></path>
+                <path
+                    d="m0 49.92c0-9.89 8.03-17.92 17.92-17.92h476.16c9.89 0 17.92 8.03 17.92 17.92v14.08h-512zm4.167 0v9.913h503.666v-9.913c0-7.591-6.162-13.753-13.753-13.753h-476.16c-7.591 0-13.753 6.162-13.753 13.753z"
+                    fill="#366138"></path>
+                <path
+                    d="m224 101.12c0-2.826-2.294-5.12-5.12-5.12h-181.76c-2.826 0-5.12 2.294-5.12 5.12v117.76c0 2.826 2.294 5.12 5.12 5.12h181.76c2.826 0 5.12-2.294 5.12-5.12z"
+                    fill="#c6dcab"></path>
+                <path
+                    d="m224 101.12v117.76c0 2.826-2.294 5.12-5.12 5.12h-181.76c-2.826 0-5.12-2.294-5.12-5.12v-117.76c0-2.826 2.294-5.12 5.12-5.12h181.76c2.826 0 5.12 2.294 5.12 5.12zm-4.167 0c0-.526-.427-.953-.953-.953h-181.76c-.526 0-.953.427-.953.953v117.76c0 .526.427.953.953.953h181.76c.526 0 .953-.427.953-.953z"
+                    fill="#366138"></path>
+                <path
+                    d="m216 204.64c0-.353-.287-.64-.64-.64h-38.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h38.72c.353 0 .64-.287.64-.64z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m220.167 204.64v6.72l-.38 1.873-1.028 1.526-1.526 1.028-1.873.38h-38.72l-1.873-.38-1.526-1.028-1.028-1.526-.38-1.873v-6.72l.38-1.873 1.028-1.526 1.526-1.028 1.873-.38h38.72l1.873.38 1.526 1.028 1.028 1.526zm-4.167 0c0-.353-.287-.64-.64-.64h-38.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h38.72c.353 0 .64-.287.64-.64z"
+                    fill="#366138"></path>
+                <path
+                    d="m480 263.68c0-4.239-3.441-7.68-7.68-7.68h-432.64c-4.239 0-7.68 3.441-7.68 7.68v176.64c0 4.239 3.441 7.68 7.68 7.68h432.64c4.239 0 7.68-3.441 7.68-7.68z"
+                    fill="#c6dcab"></path>
+                <path
+                    d="m480 263.68v176.64c0 4.239-3.441 7.68-7.68 7.68h-432.64c-4.239 0-7.68-3.441-7.68-7.68v-176.64c0-4.239 3.441-7.68 7.68-7.68h432.64c4.239 0 7.68 3.441 7.68 7.68zm-4.167 0c0-1.939-1.574-3.513-3.513-3.513h-432.64c-1.939 0-3.513 1.574-3.513 3.513v176.64c0 1.939 1.574 3.513 3.513 3.513h432.64c1.939 0 3.513-1.574 3.513-3.513z"
+                    fill="#366138"></path>
+                <path
+                    d="m139.935 364.853c29.627 4.289 52.065 24.244 52.065 48.183 0 27.063-128 27.063-128 0 0-23.939 22.438-43.894 52.065-48.183-16.255-5.082-28.065-20.266-28.065-38.186 0-22.077 17.923-40 40-40s40 17.923 40 40c0 17.92-11.81 33.104-28.065 38.186z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m139.935 364.853c29.627 4.289 52.065 24.244 52.065 48.183 0 27.063-128 27.063-128 0 0-23.939 22.438-43.894 52.065-48.183-16.255-5.082-28.065-20.266-28.065-38.186 0-22.077 17.923-40 40-40s40 17.923 40 40c0 17.92-11.81 33.104-28.065 38.186zm-1.243-3.977c14.562-4.553 25.141-18.155 25.141-34.209 0-19.777-16.056-35.834-35.833-35.834s-35.833 16.057-35.833 35.834c0 16.054 10.579 29.656 25.141 34.209 1.857.58 3.065 2.369 2.91 4.308-.155 1.94-1.631 3.514-3.556 3.792-27.365 3.962-48.495 21.949-48.495 44.06 0 1.608.901 2.984 2.27 4.27 1.985 1.866 4.882 3.448 8.411 4.847 11.913 4.723 30.537 7.014 49.152 7.014s37.239-2.291 49.152-7.014c3.529-1.399 6.426-2.981 8.411-4.847 1.369-1.286 2.27-2.662 2.27-4.27 0-22.111-21.13-40.098-48.495-44.06-1.925-.278-3.401-1.852-3.556-3.792-.155-1.939 1.053-3.728 2.91-4.308z"
+                    fill="#366138"></path>
+                <path
+                    d="m448 285.92c0-3.267-2.653-5.92-5.92-5.92h-212.16c-3.267 0-5.92 2.653-5.92 5.92v136.16c0 3.267 2.653 5.92 5.92 5.92h212.16c3.267 0 5.92-2.653 5.92-5.92z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m448 285.92v136.16c0 3.267-2.653 5.92-5.92 5.92h-212.16c-3.267 0-5.92-2.653-5.92-5.92v-136.16c0-3.267 2.653-5.92 5.92-5.92h212.16c3.267 0 5.92 2.653 5.92 5.92zm-4.167 0c0-.968-.785-1.753-1.753-1.753h-212.16c-.968 0-1.753.785-1.753 1.753v136.16c0 .968.785 1.753 1.753 1.753h212.16c.968 0 1.753-.785 1.753-1.753z"
+                    fill="#366138"></path>
+                <path
+                    d="m440 290.64c0-1.457-1.183-2.64-2.64-2.64h-202.72c-1.457 0-2.64 1.183-2.64 2.64v126.72c0 1.457 1.183 2.64 2.64 2.64h202.72c1.457 0 2.64-1.183 2.64-2.64z"
+                    fill="#c6dcab"></path>
+                <path
+                    d="m440 290.64v126.72c0 1.457-1.183 2.64-2.64 2.64h-202.72c-1.457 0-2.64-1.183-2.64-2.64v-126.72c0-1.457 1.183-2.64 2.64-2.64h202.72c1.457 0 2.64 1.183 2.64 2.64zm-203.833 1.527v123.666h199.666v-123.666z"
+                    fill="#366138"></path>
+                <path
+                    d="m104.521 161.266c20.429 4.224 35.479 18.531 35.479 35.511 0 20.297-96 20.297-96 0 0-16.98 15.05-31.287 35.479-35.511-10.313-4.748-17.479-15.177-17.479-27.266 0-16.557 13.443-30 30-30s30 13.443 30 30c0 12.089-7.166 22.518-17.479 27.266z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m104.521 161.266c20.429 4.224 35.479 18.531 35.479 35.511 0 20.297-96 20.297-96 0 0-16.98 15.05-31.287 35.479-35.511-10.313-4.748-17.479-15.177-17.479-27.266 0-16.557 13.443-30 30-30s30 13.443 30 30c0 12.089-7.166 22.518-17.479 27.266zm-1.742-3.785c8.881-4.089 15.054-13.069 15.054-23.481 0-14.258-11.575-25.833-25.833-25.833s-25.833 11.575-25.833 25.833c0 10.412 6.173 19.392 15.054 23.481 1.635.753 2.602 2.47 2.397 4.258-.204 1.788-1.533 3.243-3.296 3.607-18.299 3.784-32.155 16.221-32.155 31.431 0 .932.581 1.698 1.374 2.444 1.409 1.324 3.474 2.432 5.979 3.425 8.841 3.505 22.665 5.187 36.48 5.187s27.639-1.682 36.48-5.187c2.505-.993 4.57-2.101 5.979-3.425.793-.746 1.374-1.512 1.374-2.444 0-15.21-13.856-27.647-32.155-31.431-1.763-.364-3.092-1.819-3.296-3.607-.205-1.788.762-3.505 2.397-4.258z"
+                    fill="#366138"></path>
+                <path
+                    d="m480 101.12c0-2.826-2.294-5.12-5.12-5.12h-181.76c-2.826 0-5.12 2.294-5.12 5.12v117.76c0 2.826 2.294 5.12 5.12 5.12h181.76c2.826 0 5.12-2.294 5.12-5.12z"
+                    fill="#c6dcab"></path>
+                <path
+                    d="m480 101.12v117.76c0 2.826-2.294 5.12-5.12 5.12h-181.76c-2.826 0-5.12-2.294-5.12-5.12v-117.76c0-2.826 2.294-5.12 5.12-5.12h181.76c2.826 0 5.12 2.294 5.12 5.12zm-4.167 0c0-.526-.427-.953-.953-.953h-181.76c-.526 0-.953.427-.953.953v117.76c0 .526.427.953.953.953h181.76c.526 0 .953-.427.953-.953z"
+                    fill="#366138"></path>
+                <path
+                    d="m472 204.64c0-.353-.287-.64-.64-.64h-38.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h38.72c.353 0 .64-.287.64-.64z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m476.167 204.64v6.72l-.38 1.873-1.028 1.526-1.526 1.028-1.873.38h-38.72l-1.873-.38-1.526-1.028-1.028-1.526-.38-1.873v-6.72l.38-1.873 1.028-1.526 1.526-1.028 1.873-.38h38.72l1.873.38 1.526 1.028 1.028 1.526zm-4.167 0c0-.353-.287-.64-.64-.64h-38.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h38.72c.353 0 .64-.287.64-.64z"
+                    fill="#366138"></path>
+                <path
+                    d="m472 264.64c0-.353-.287-.64-.64-.64h-38.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h38.72c.353 0 .64-.287.64-.64z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m476.167 264.64v6.72l-.38 1.873-1.028 1.526-1.526 1.028-1.873.38h-38.72l-1.873-.38-1.526-1.028-1.028-1.526-.38-1.873v-6.72l.38-1.873 1.028-1.526 1.526-1.028 1.873-.38h38.72l1.873.38 1.526 1.028 1.028 1.526zm-4.167 0c0-.353-.287-.64-.64-.64h-38.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h38.72c.353 0 .64-.287.64-.64z"
+                    fill="#366138"></path>
+                <path
+                    d="m360.521 161.266c20.429 4.224 35.479 18.531 35.479 35.511 0 20.297-96 20.297-96 0 0-16.98 15.05-31.287 35.479-35.511-10.313-4.748-17.479-15.177-17.479-27.266 0-16.557 13.443-30 30-30s30 13.443 30 30c0 12.089-7.166 22.518-17.479 27.266z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m360.521 161.266c20.429 4.224 35.479 18.531 35.479 35.511 0 20.297-96 20.297-96 0 0-16.98 15.05-31.287 35.479-35.511-10.313-4.748-17.479-15.177-17.479-27.266 0-16.557 13.443-30 30-30s30 13.443 30 30c0 12.089-7.166 22.518-17.479 27.266zm-1.742-3.785c8.881-4.089 15.054-13.069 15.054-23.481 0-14.258-11.575-25.833-25.833-25.833s-25.833 11.575-25.833 25.833c0 10.412 6.173 19.392 15.054 23.481 1.635.753 2.602 2.47 2.397 4.258-.204 1.788-1.533 3.243-3.296 3.607-18.299 3.784-32.155 16.221-32.155 31.431 0 .932.581 1.698 1.374 2.444 1.409 1.324 3.474 2.432 5.979 3.425 8.841 3.505 22.665 5.187 36.48 5.187s27.639-1.682 36.48-5.187c2.505-.993 4.57-2.101 5.979-3.425.793-.746 1.374-1.512 1.374-2.444 0-15.21-13.856-27.647-32.155-31.431-1.763-.364-3.092-1.819-3.296-3.607-.205-1.788.762-3.505 2.397-4.258z"
+                    fill="#366138"></path>
+                <circle cx="404" cy="48" fill="#6a906c" r="12"></circle>
+                <path
+                    d="m404 36c6.623 0 12 5.377 12 12s-5.377 12-12 12-12-5.377-12-12 5.377-12 12-12zm0 4.167c-4.323 0-7.833 3.51-7.833 7.833s3.51 7.833 7.833 7.833 7.833-3.51 7.833-7.833-3.51-7.833-7.833-7.833z"
+                    fill="#366138"></path>
+                <circle cx="436" cy="48" fill="#6a906c" r="12"></circle>
+                <path
+                    d="m436 36c6.623 0 12 5.377 12 12s-5.377 12-12 12-12-5.377-12-12 5.377-12 12-12zm0 4.167c-4.323 0-7.833 3.51-7.833 7.833s3.51 7.833 7.833 7.833 7.833-3.51 7.833-7.833-3.51-7.833-7.833-7.833z"
+                    fill="#366138"></path>
+                <circle cx="468" cy="48" fill="#6a906c" r="12"></circle>
+                <path
+                    d="m468 36c6.623 0 12 5.377 12 12s-5.377 12-12 12-12-5.377-12-12 5.377-12 12-12zm0 4.167c-4.323 0-7.833 3.51-7.833 7.833s3.51 7.833 7.833 7.833 7.833-3.51 7.833-7.833-3.51-7.833-7.833-7.833z"
+                    fill="#366138"></path>
+                <path
+                    d="m336 329.64c0-.353-.287-.64-.64-.64h-78.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h78.72c.353 0 .64-.287.64-.64z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m340.167 329.64v6.72l-.38 1.873-1.028 1.526-1.526 1.028-1.873.38h-78.72l-1.873-.38-1.526-1.028-1.028-1.526-.38-1.873v-6.72l.38-1.873 1.028-1.526 1.526-1.028 1.873-.38h78.72l1.873.38 1.526 1.028 1.028 1.526zm-4.167 0c0-.353-.287-.64-.64-.64h-78.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h78.72c.353 0 .64-.287.64-.64z"
+                    fill="#366138"></path>
+                <path
+                    d="m336 349.64c0-.353-.287-.64-.64-.64h-78.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h78.72c.353 0 .64-.287.64-.64z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m340.167 349.64v6.72l-.38 1.873-1.028 1.526-1.526 1.028-1.873.38h-78.72l-1.873-.38-1.526-1.028-1.028-1.526-.38-1.873v-6.72l.38-1.873 1.028-1.526 1.526-1.028 1.873-.38h78.72l1.873.38 1.526 1.028 1.028 1.526zm-4.167 0c0-.353-.287-.64-.64-.64h-78.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h78.72c.353 0 .64-.287.64-.64z"
+                    fill="#366138"></path>
+                <path
+                    d="m336 371.64c0-.353-.287-.64-.64-.64h-78.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h78.72c.353 0 .64-.287.64-.64z"
+                    fill="#6a906c"></path>
+                <path
+                    d="m340.167 371.64v6.72l-.38 1.873-1.028 1.526-1.526 1.028-1.873.38h-78.72l-1.873-.38-1.526-1.028-1.028-1.526-.38-1.873v-6.72l.38-1.873 1.028-1.526 1.526-1.028 1.873-.38h78.72l1.873.38 1.526 1.028 1.028 1.526zm-4.167 0c0-.353-.287-.64-.64-.64h-78.72c-.353 0-.64.287-.64.64v6.72c0 .353.287.64.64.64h78.72c.353 0 .64-.287.64-.64z"
+                    fill="#366138"></path>
+                <circle cx="384" cy="352" fill="#6a906c" r="32"></circle>
+                <path
+                    d="m384 320c17.661 0 32 14.339 32 32s-14.339 32-32 32-32-14.339-32-32 14.339-32 32-32zm0 4.167c-15.362 0-27.833 12.471-27.833 27.833s12.471 27.833 27.833 27.833 27.833-12.471 27.833-27.833-12.471-27.833-27.833-27.833z"
+                    fill="#366138"></path>
+            </svg>Sesi Kelas Sedang Berlangsung</h2>
         <div class="mt-4 overflow-hidden rounded-lg bg-white shadow">
             @if (count($ongoingSessions) > 0)
                 <div class="overflow-x-auto">
@@ -547,7 +817,7 @@ new class extends Component {
     </div>
 
     <!-- Chart Section -->
-    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <!-- Kehadiran 7 Hari Terakhir -->
         <div class="overflow-hidden rounded-lg bg-white shadow">
             <div class="border-b border-gray-200 px-6 py-4">

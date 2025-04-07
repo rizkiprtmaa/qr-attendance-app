@@ -61,6 +61,14 @@
                 /* 8 dalam Tailwind */
             }
         }
+
+        @media (min-width: 1440px) {
+            .header-container {
+                padding-left: 0 !important;
+                /* 8 dalam Tailwind */
+                padding-right: 0 !important;
+            }
+        }
     </style>
 
     @livewireStyles

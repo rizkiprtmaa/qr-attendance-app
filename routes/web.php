@@ -2,13 +2,9 @@
 
 use App\Models\User;
 use Livewire\Volt\Volt;
-use App\Models\SubjectClassSession;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ClassReportController;
-use App\Http\Controllers\AttendancePdfController;
-use App\Http\Controllers\SubstituteTeacherController;
+
 
 Route::view('/', 'welcome');
 
@@ -96,21 +92,7 @@ Route::view('/teacher/substitute-classes', 'teacher.substitution.index')->middle
 Route::view('/substitution-request', 'admin.substitution.index')->middleware(['auth', 'verified', 'role:admin'])
     ->name('substitution-request');
 
-// Route::view('/teacher/substitute-classes/{subjectClass}', 'teacher.substitution.index')
-//     ->name('substitute.class')
-//     ->middleware('can:manage-substitute-class,subjectClass');
 
-// routes/web.php
-// Route::middleware(['auth', 'role:teacher'])->group(function () {
-//     // Manajemen kelas pengganti (menggunakan gate)
-//     Route::get('/teacher/substitute/class/{subjectClass}', Volt::class)
-//         ->name('substitute.class')
-//         ->middleware('can:manage-substitute-class,subjectClass');
-
-//     // Manajemen presensi untuk sesi kelas pengganti
-//     Route::get('/teacher/session/{session}/attendance', Volt::class)
-//         ->name('session.attendance');
-// });
 
 Volt::route('/teacher/substitute/class/{subjectClass}', 'teacher.substitution-class-management')
     ->middleware(['auth', 'verified', 'role:teacher'])
@@ -126,6 +108,57 @@ Route::get('/class/{subjectClass}/agenda-report', [ClassReportController::class,
 
 Route::get('/class/{subjectClass}/attendance-report', [ClassReportController::class, 'generateAttendanceReport'])
     ->name('attendance.report');
+
+// routes/web.php
+Route::get('/test-daily-summary/{userId}/{date?}', function ($userId, $date = null) {
+    if (!$date) {
+        $date = now()->format('Y-m-d');
+    }
+
+    // Ambil user
+    $user = \App\Models\User::find($userId);
+    if (!$user) {
+        return "User not found!";
+    }
+
+    // Ambil attendance data
+    $attendances = \App\Models\Attendance::with('subjectClassSession.subjectClass')
+        ->where('user_id', $userId)
+        ->where('attendance_date', $date)
+        ->get();
+
+    if ($attendances->isEmpty()) {
+        return "No attendance data found for this user on {$date}";
+    }
+
+    // Format data
+    $attendanceData = [];
+    foreach ($attendances as $attendance) {
+        if ($attendance->subjectClassSession && $attendance->subjectClassSession->subjectClass) {
+            $attendanceData[] = [
+                'subject' => $attendance->subjectClassSession->subjectClass->class_name,
+                'time' => $attendance->check_in_time,
+                'status' => $attendance->status
+            ];
+        }
+    }
+
+    if (empty($attendanceData)) {
+        return "No valid subject data found for this user's attendance records";
+    }
+
+    // Send test message
+    $service = app(\App\Services\WhatsAppService::class);
+    $result = $service->sendDailySummary(
+        $user->student->parent_number ?? '6282215544909', // Fallback to test number if needed
+        $user->name,
+        $attendanceData
+    );
+
+    return $result ?
+        "Daily summary sent successfully!" :
+        "Failed to send daily summary. Check logs for details.";
+})->middleware('auth:web');
 
 
 require __DIR__ . '/auth.php';

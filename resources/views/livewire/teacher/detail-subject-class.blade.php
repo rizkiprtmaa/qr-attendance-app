@@ -78,7 +78,7 @@ new #[Layout('layouts.app')] class extends Component {
 
         try {
             // Format class date with the start time to create a proper datetime
-            $classDateTime = \Carbon\Carbon::parse($this->classDate . ' ' . $this->startTime);
+            $classDateTime = \Carbon\Carbon::parse($this->classDate . ' ' . $this->startTime)->setTimezone('Asia/Jakarta');
             $sessionDate = $classDateTime->toDateString();
 
             // Create the session

@@ -121,14 +121,7 @@ new class extends Component {
 }; ?>
 
 <div>
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-xl font-medium text-gray-800">Pengajuan Tersedia</h2>
-                <p class="text-sm text-gray-600">Kelola pengajuan izin dari guru dan siswa</p>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Tab Navigation -->
     <div class="mb-6 border-b border-gray-200">
