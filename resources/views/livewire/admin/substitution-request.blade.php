@@ -365,120 +365,260 @@ new class extends Component {
         </div>
         <!-- Daftar Permintaan -->
         <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-            <table class="min-w-full divide-y divide-gray-300">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col"
-                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Guru
-                            Pengganti</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Guru
-                            Utama</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Mata
-                            Pelajaran</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Kelas
-                        </th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Tanggal
-                        </th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status
-                        </th>
-                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                            <span class="sr-only">Aksi</span>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
-                    @forelse ($requests as $request)
-                        <tr class="@if ($request->status === 'pending') bg-yellow-50 @endif">
-                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
-                                <div class="font-medium text-gray-900">{{ $request->substituteTeacher->name }}</div>
-                                <div class="text-xs text-gray-500">{{ $request->substituteTeacher->teacher->nuptk }}
-                                </div>
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                <div class="font-medium text-gray-900">{{ $request->user->name }}</div>
-                                <div class="text-xs text-gray-500">{{ $request->substituteTeacher->teacher->nuptk }}
-                                </div>
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                {{ $request->subjectClass->class_name }}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                {{ $request->subjectClass->classes->name }} -
-                                {{ $request->subjectClass->classes->major->name }}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
-                                @if ($request->end_date && $request->start_date != $request->end_date)
-                                    - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
-                                @endif
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm">
-                                @if ($request->status === 'pending')
-                                    <span
-                                        class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Menunggu</span>
-                                @elseif($request->status === 'approved')
-                                    <span
-                                        class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">Disetujui</span>
-                                @elseif($request->status === 'rejected')
-                                    <span
-                                        class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">Ditolak</span>
-                                @else
-                                    <span
-                                        class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Selesai</span>
-                                @endif
-                            </td>
-                            <td
-                                class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                <div class="flex justify-end space-x-2">
-                                    <button @click="$wire.showApprovalModal({{ $request->id }}, 'approve')"
-                                        class="text-green-600 hover:text-green-900 disabled:cursor-not-allowed disabled:opacity-50"
-                                        @if ($request->status !== 'pending') disabled @endif>
-                                        <span class="sr-only">Setujui</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                            fill="currentColor">
-                                            <path fill-rule="evenodd"
-                                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <button wire:click="showApprovalModal({{ $request->id }}, 'reject')"
-                                        class="text-red-600 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
-                                        @if ($request->status !== 'pending') disabled @endif>
-                                        <span class="sr-only">Tolak</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                            fill="currentColor">
-                                            <path fill-rule="evenodd"
-                                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <button x-data="{}"
-                                        x-on:click="$dispatch('open-detail', { request: {{ json_encode($request->load('user', 'substituteTeacher', 'subjectClass.classes.major')) }} })"
-                                        class="text-blue-600 hover:text-blue-900">
-                                        <span class="sr-only">Detail</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
-                                            fill="currentColor">
-                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                            <path fill-rule="evenodd"
-                                                d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
+            <!-- Tampilan tabel untuk desktop - Hanya ditampilkan pada layar md ke atas -->
+            <div class="hidden md:block">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <td colspan="7" class="py-6 text-center text-sm text-gray-500">
-                                Tidak ada permintaan penggantian
-                            </td>
+                            <th scope="col"
+                                class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Guru
+                                Pengganti</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Guru
+                                Utama</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Mata
+                                Pelajaran</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Kelas
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                Tanggal
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                Status
+                            </th>
+                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                <span class="sr-only">Aksi</span>
+                            </th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        @forelse ($requests as $request)
+                            <tr class="@if ($request->status === 'pending') bg-yellow-50 @endif">
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                                    <div class="font-medium text-gray-900">{{ $request->substituteTeacher->name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $request->substituteTeacher->teacher->nuptk }}
+                                    </div>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    <div class="font-medium text-gray-900">{{ $request->user->name }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $request->substituteTeacher->teacher->nuptk }}
+                                    </div>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ $request->subjectClass->class_name }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ $request->subjectClass->classes->name }} -
+                                    {{ $request->subjectClass->classes->major->name }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
+                                    @if ($request->end_date && $request->start_date != $request->end_date)
+                                        - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
+                                    @endif
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                    @if ($request->status === 'pending')
+                                        <span
+                                            class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Menunggu</span>
+                                    @elseif($request->status === 'approved')
+                                        <span
+                                            class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">Disetujui</span>
+                                    @elseif($request->status === 'rejected')
+                                        <span
+                                            class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">Ditolak</span>
+                                    @else
+                                        <span
+                                            class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Selesai</span>
+                                    @endif
+                                </td>
+                                <td
+                                    class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                    <div class="flex justify-end space-x-2">
+                                        <button @click="$wire.showApprovalModal({{ $request->id }}, 'approve')"
+                                            class="text-green-600 hover:text-green-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                            @if ($request->status !== 'pending') disabled @endif>
+                                            <span class="sr-only">Setujui</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <button wire:click="showApprovalModal({{ $request->id }}, 'reject')"
+                                            class="text-red-600 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                            @if ($request->status !== 'pending') disabled @endif>
+                                            <span class="sr-only">Tolak</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <button x-data="{}"
+                                            x-on:click="$dispatch('open-detail', { request: {{ json_encode($request->load('user', 'substituteTeacher', 'subjectClass.classes.major')) }} })"
+                                            class="text-blue-600 hover:text-blue-900">
+                                            <span class="sr-only">Detail</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                <path fill-rule="evenodd"
+                                                    d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="py-6 text-center text-sm text-gray-500">
+                                    Tidak ada permintaan penggantian
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
 
-            <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-                {{ $requests->links() }}
+                <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                    {{ $requests->links() }}
+                </div>
+            </div>
+
+            <!-- Tampilan card untuk mobile - Hanya ditampilkan pada layar kecil (sm ke bawah) -->
+            <div class="block md:hidden">
+                <div class="divide-y divide-gray-200">
+                    @forelse ($requests as $request)
+                        <div class="@if ($request->status === 'pending') bg-yellow-50 @endif p-4">
+                            <!-- Header Card dengan status -->
+                            <div class="mb-3 flex items-center justify-between">
+                                <div class="text-sm font-medium text-gray-900">
+                                    Permintaan Guru Pengganti
+                                </div>
+                                <div>
+                                    @if ($request->status === 'pending')
+                                        <span
+                                            class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">
+                                            Menunggu
+                                        </span>
+                                    @elseif($request->status === 'approved')
+                                        <span
+                                            class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">
+                                            Disetujui
+                                        </span>
+                                    @elseif($request->status === 'rejected')
+                                        <span
+                                            class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">
+                                            Ditolak
+                                        </span>
+                                    @else
+                                        <span
+                                            class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">
+                                            Selesai
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Informasi Guru & Kelas -->
+                            <div class="mb-3 rounded-lg border border-gray-200 bg-white p-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <!-- Kolom kiri: Guru Pengganti -->
+                                    <div>
+                                        <div class="mb-1 text-xs text-gray-500">Guru Pengganti</div>
+                                        <div class="font-medium text-gray-900">{{ $request->substituteTeacher->name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {{ $request->substituteTeacher->teacher->nuptk }}</div>
+                                    </div>
+
+                                    <!-- Kolom kanan: Guru Utama -->
+                                    <div>
+                                        <div class="mb-1 text-xs text-gray-500">Guru Utama</div>
+                                        <div class="font-medium text-gray-900">{{ $request->user->name }}</div>
+                                        <div class="text-xs text-gray-500">
+                                            {{ $request->substituteTeacher->teacher->nuptk }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Informasi Kelas & Mata Pelajaran -->
+                            <div class="mb-4 space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Mata Pelajaran:</span>
+                                    <span
+                                        class="text-right font-medium">{{ $request->subjectClass->class_name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Kelas:</span>
+                                    <span class="text-right font-medium">{{ $request->subjectClass->classes->name }} -
+                                        {{ $request->subjectClass->classes->major->name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Tanggal:</span>
+                                    <span class="text-right font-medium">
+                                        {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
+                                        @if ($request->end_date && $request->start_date != $request->end_date)
+                                            - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div class="flex justify-between space-x-2">
+                                <button @click="$wire.showApprovalModal({{ $request->id }}, 'approve')"
+                                    class="inline-flex flex-1 items-center justify-center rounded-md border border-transparent bg-green-600 px-3 py-2 text-sm font-medium leading-4 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    @if ($request->status !== 'pending') disabled @endif>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Setujui
+                                </button>
+
+                                <button wire:click="showApprovalModal({{ $request->id }}, 'reject')"
+                                    class="inline-flex flex-1 items-center justify-center rounded-md border border-transparent bg-red-600 px-3 py-2 text-sm font-medium leading-4 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    @if ($request->status !== 'pending') disabled @endif>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Tolak
+                                </button>
+
+                                <button x-data="{}"
+                                    x-on:click="$dispatch('open-detail', { request: {{ json_encode($request->load('user', 'substituteTeacher', 'subjectClass.classes.major')) }} })"
+                                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fill-rule="evenodd"
+                                            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-6 text-center text-sm text-gray-500">
+                            Tidak ada permintaan penggantian
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Pagination untuk mobile -->
+                <div class="border-t border-gray-200 bg-white px-4 py-3">
+                    {{ $requests->links() }}
+                </div>
             </div>
         </div>
     </div>

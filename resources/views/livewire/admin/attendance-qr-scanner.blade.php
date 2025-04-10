@@ -322,11 +322,12 @@ new class extends Component {
 
                                     <div
                                         class="flex flex-row items-center gap-2 rounded-2xl bg-white/20 p-6 shadow-sm backdrop-blur-lg">
-                                        <div>
+                                        <div class="flex h-10 w-10 items-center justify-center">
                                             <img src="{{ asset('images/logo-sekolah.png') }}" alt=""
-                                                class="h-10 w-10">
+                                                class="h-7 w-7 object-cover md:h-10 md:w-10">
                                         </div>
-                                        <p class="font-inter text-xl font-semibold">Sistem Presensi Digital SMK
+                                        <p class="font-inter text-sm font-semibold md:text-xl">Sistem Presensi Digital
+                                            SMK
                                             Nurussalam
                                         </p>
                                     </div>

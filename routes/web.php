@@ -20,9 +20,13 @@ Route::view('users', 'admin.user.index')
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('users');
 
-Route::view('teachers', 'admin.user.teacher')
+Route::view('teachers', 'admin.user.index')
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('teachers');
+
+Route::view('students', 'admin.user.index')
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('students');
 
 
 Route::view('create-user', 'admin.user.create')
@@ -109,56 +113,31 @@ Route::get('/class/{subjectClass}/agenda-report', [ClassReportController::class,
 Route::get('/class/{subjectClass}/attendance-report', [ClassReportController::class, 'generateAttendanceReport'])
     ->name('attendance.report');
 
-// routes/web.php
-Route::get('/test-daily-summary/{userId}/{date?}', function ($userId, $date = null) {
-    if (!$date) {
-        $date = now()->format('Y-m-d');
-    }
+Route::view('/student/reports', 'student.report.index')
+    ->middleware(['auth', 'verified', 'role:student'])
+    ->name('reports');
 
-    // Ambil user
-    $user = \App\Models\User::find($userId);
-    if (!$user) {
-        return "User not found!";
-    }
+Route::view('/student/attendance-history', 'student.history.index')
+    ->middleware(['auth', 'verified', 'role:student'])
+    ->name('attendance-history');
 
-    // Ambil attendance data
-    $attendances = \App\Models\Attendance::with('subjectClassSession.subjectClass')
-        ->where('user_id', $userId)
-        ->where('attendance_date', $date)
-        ->get();
+// Detail kehadiran QR
+Route::get('/student/attendance/detail/{date}', function ($date) {
+    return view('student.attendance.detail', [
+        'date' => $date,
+        'type' => 'qr'
+    ]);
+})->name('student.attendance.detail.qr');
 
-    if ($attendances->isEmpty()) {
-        return "No attendance data found for this user on {$date}";
-    }
+// Detail kehadiran mata pelajaran
+Route::get('/student/attendance/detail/subject/{date}/{id}', function ($date, $id) {
+    return view('student.attendance.detail', [
+        'date' => $date,
+        'type' => 'subject',
+        'id' => $id
+    ]);
+})->name('student.attendance.detail.subject');
 
-    // Format data
-    $attendanceData = [];
-    foreach ($attendances as $attendance) {
-        if ($attendance->subjectClassSession && $attendance->subjectClassSession->subjectClass) {
-            $attendanceData[] = [
-                'subject' => $attendance->subjectClassSession->subjectClass->class_name,
-                'time' => $attendance->check_in_time,
-                'status' => $attendance->status
-            ];
-        }
-    }
-
-    if (empty($attendanceData)) {
-        return "No valid subject data found for this user's attendance records";
-    }
-
-    // Send test message
-    $service = app(\App\Services\WhatsAppService::class);
-    $result = $service->sendDailySummary(
-        $user->student->parent_number ?? '6282215544909', // Fallback to test number if needed
-        $user->name,
-        $attendanceData
-    );
-
-    return $result ?
-        "Daily summary sent successfully!" :
-        "Failed to send daily summary. Check logs for details.";
-})->middleware('auth:web');
 
 
 require __DIR__ . '/auth.php';

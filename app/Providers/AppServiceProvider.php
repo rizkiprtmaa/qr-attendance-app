@@ -26,5 +26,10 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
         Attendance::observe(AttendanceObserver::class);
+
+        // Force HTTPS in production
+        // if ($this->app->environment('local')) {
+        //     URL::forceScheme('https');
+        // }
     }
 }

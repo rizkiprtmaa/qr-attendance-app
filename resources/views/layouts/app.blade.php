@@ -81,7 +81,7 @@
 
         <main class="flex-1 px-4 pt-4 transition-all duration-300 ease-in-out md:ml-64">
             @if (isset($header))
-                <header class="mt-10 w-full md:mt-0">
+                <header class="mt-10 hidden w-full md:mt-0 md:block">
                     <div class="header-container mx-auto max-w-7xl py-3">
                         {{ $header }}
                     </div>

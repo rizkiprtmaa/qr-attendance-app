@@ -33,6 +33,9 @@
             @role('teacher')
                 <livewire:teacher.dashboard />
             @endrole
+            @role('student')
+                <livewire:student.dashboard />
+            @endrole
         </div>
 
 

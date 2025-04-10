@@ -125,7 +125,7 @@ new class extends Component {
 
     <!-- Tab Navigation -->
     <div class="mb-6 border-b border-gray-200">
-        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav class="-mb-px flex space-x-1 md:space-x-8" aria-label="Tabs">
             <button wire:click="changeViewMode('pending')"
                 class="{{ $viewMode === 'pending' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium">
                 Menunggu Persetujuan
@@ -156,7 +156,8 @@ new class extends Component {
     <!-- Permission List -->
     <div class="rounded-lg border border-gray-200 bg-white shadow">
         @if (count($permissions) > 0)
-            <div class="">
+            <!-- Tampilan desktop (tabel) - Hanya ditampilkan pada layar md ke atas -->
+            <div class="hidden md:block">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -275,6 +276,101 @@ new class extends Component {
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Tampilan mobile (card list) - Hanya ditampilkan pada layar kecil (sm ke bawah) -->
+            <div class="block md:hidden">
+                <div class="divide-y divide-gray-200">
+                    @foreach ($permissions as $permission)
+                        <div class="p-4">
+                            <div class="mb-3 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="font-medium text-gray-900">{{ $permission->user->name }}</div>
+                                        <div class="text-xs text-gray-500">{{ ucfirst($permission->user->role) }}</div>
+                                    </div>
+                                </div>
+                                <span
+                                    class="{{ $permission->type === 'sakit' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }} inline-flex rounded-full px-2 py-1 text-xs font-semibold">
+                                    {{ ucfirst($permission->type) }}
+                                </span>
+                            </div>
+
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Tanggal:</span>
+                                    <span
+                                        class="font-medium">{{ \Carbon\Carbon::parse($permission->permission_date)->locale('id')->translatedFormat('d F Y') }}</span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Deskripsi:</span>
+                                    <span class="max-w-[60%] text-right">{{ $permission->description ?: '-' }}</span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Lampiran:</span>
+                                    <span>
+                                        @if ($permission->attachment_path)
+                                            <a href="{{ Storage::url($permission->attachment_path) }}"
+                                                target="_blank" class="text-blue-600 hover:text-blue-900">
+                                                Lihat
+                                            </a>
+                                        @else
+                                            -
+                                        @endif
+                                    </span>
+                                </div>
+
+                                @if ($viewMode !== 'pending')
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Catatan Admin:</span>
+                                        <span
+                                            class="max-w-[60%] text-right">{{ $permission->admin_notes ?: '-' }}</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            @if ($viewMode === 'pending')
+                                <div class="mt-4" x-data="{ openMobile: false }">
+                                    <button @click="openMobile = !openMobile" type="button"
+                                        class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                                        Tindakan
+                                    </button>
+                                    <div x-show="openMobile" @click.away="openMobile = false"
+                                        class="mt-2 rounded-md bg-gray-50 p-3 shadow ring-1 ring-black ring-opacity-5">
+                                        <div class="mb-3">
+                                            <label for="mobileAdminNotes{{ $permission->id }}"
+                                                class="block text-sm font-medium text-gray-700">Catatan</label>
+                                            <textarea wire:model.defer="adminNotes" id="mobileAdminNotes{{ $permission->id }}" rows="2"
+                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                        </div>
+                                        <div class="flex justify-between space-x-2">
+                                            <button wire:click="approvePermission({{ $permission->id }})"
+                                                @click="openMobile = false"
+                                                class="flex w-full items-center justify-center rounded-md bg-green-100 px-3 py-2 text-sm font-medium text-green-800 hover:bg-green-200">
+                                                Setujui
+                                            </button>
+                                            <button wire:click="rejectPermission({{ $permission->id }})"
+                                                @click="openMobile = false"
+                                                class="flex w-full items-center justify-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-200">
+                                                Tolak
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
             </div>
         @else
             <div class="py-8 text-center">
