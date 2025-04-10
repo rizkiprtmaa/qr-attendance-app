@@ -78,7 +78,7 @@ new #[Layout('layouts.app')] class extends Component {
     currentUserId: '{{ $user->id }}'
 }">
     <div class="mb-7">
-        <p class="font-inter text-2xl font-medium dark:text-slate-900">Detail Siswa</p>
+        <p class="font-inter text-3xl font-semibold leading-tight text-slate-900 dark:text-slate-900">Detail Siswa</p>
     </div>
     <div class="w-full rounded-md border border-solid border-slate-400/30 bg-white p-6 shadow-sm">
 

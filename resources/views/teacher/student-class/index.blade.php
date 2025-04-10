@@ -2,10 +2,10 @@
     <x-slot name="header">
         <div class="flex flex-row items-center justify-between">
             <div class="flex flex-col gap-2">
-                <h2 class="font-inter text-xl font-medium leading-tight text-gray-800">
-                    {{ __('Kelola Kelas Anda') }}
+                <h2 class="font-inter text-3xl font-semibold leading-tight text-slate-900">
+                    {{ __('Wali Kelas') }}
                 </h2>
-                <p class="font-inter text-sm text-gray-600">Kelola kelas anda</p>
+                <p class="font-inter text-sm text-gray-600">Kelola kelas anda.</p>
             </div>
             <div>
                 <p class="text-end font-inter text-sm text-gray-600">
@@ -18,7 +18,7 @@
 
 
     <div class="py-6">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
             <livewire:teacher.class-management />
 
         </div>
