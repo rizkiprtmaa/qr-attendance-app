@@ -34,8 +34,8 @@ new class extends Component {
                 </svg>
             </div>
             <div class="gap-5">
-                <p class="font-inter text-sm font-medium">Jumlah Pengguna</p>
-                <p class="font-inter text-xl">{{ $users }}</p>
+                <p class="font-inter text-sm">Jumlah Pengguna</p>
+                <p class="font-inter text-2xl font-medium">{{ $users }}</p>
             </div>
 
 
@@ -52,8 +52,8 @@ new class extends Component {
 
             </div>
             <div class="gap-5">
-                <p class="font-inter text-sm font-medium">Jumlah Guru</p>
-                <p class="font-inter text-xl">{{ $teachers }}</p>
+                <p class="font-inter text-sm">Jumlah Guru</p>
+                <p class="font-inter text-2xl font-medium">{{ $teachers }}</p>
             </div>
 
 
@@ -70,8 +70,8 @@ new class extends Component {
 
             </div>
             <div class="gap-5">
-                <p class="font-inter text-sm font-medium">Jumlah Siswa</p>
-                <p class="font-inter text-xl">{{ $students_count }}</p>
+                <p class="font-inter text-sm">Jumlah Siswa</p>
+                <p class="font-inter text-2xl font-medium">{{ $students_count }}</p>
             </div>
 
 

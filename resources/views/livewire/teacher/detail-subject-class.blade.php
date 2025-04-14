@@ -284,12 +284,18 @@ new #[Layout('layouts.app')] class extends Component {
 
         // Calculate total hours based on sessions
         $totalHours = 0;
-        $sessionsQuery = SubjectClassSession::where('subject_class_id', $this->subjectClassId);
+        $sessionsQuery = SubjectClassSession::where('subject_class_id', $this->subjectClassId)->whereNull('created_by_substitute');
 
         foreach ($sessionsQuery->get() as $session) {
-            $start = \Carbon\Carbon::parse($session->start_time);
-            $end = \Carbon\Carbon::parse($session->end_time);
-            $totalHours += $start->diffInHours($end);
+            if ($session->start_time && $session->end_time) {
+                try {
+                    $start = \Carbon\Carbon::parse($session->start_time);
+                    $end = \Carbon\Carbon::parse($session->end_time);
+                    $totalHours += $start->diffInMinutes($end) / 60;
+                } catch (\Exception $e) {
+                    continue;
+                }
+            }
         }
 
         $totalHours = number_format($totalHours, 2, '.', '');
@@ -483,47 +489,202 @@ new #[Layout('layouts.app')] class extends Component {
             </div>
         </div>
 
+        <div class="mb-4 mt-5 grid grid-cols-1 gap-4 md:hidden">
+            <div class="flex rounded-md shadow-sm">
+                <div class="relative flex flex-grow items-stretch">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </div>
+                    <input wire:model.live.debounce.300ms="search" type="text"
+                        placeholder="Cari judul pertemuan..."
+                        class="block w-full rounded-full border-gray-300 pl-10 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="hidden md:block">
+                <label for="dateFilter" class="sr-only block text-sm font-medium text-gray-700">Filter
+                    Tanggal</label>
+                <div class="relative">
+
+                    <input wire:model.live.debounce.200ms="dateFilter" type="date"
+                        class="block rounded-full border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="hidden flex-row justify-between md:flex md:justify-end">
+                <div class="flex w-full flex-col md:hidden">
+
+                    <div x-data="{ dateEmpty: true }" x-init="$watch('$wire.dateFilter', value => { dateEmpty = value === '' })"
+                        class="relative w-full rounded-full shadow-sm">
+                        <input wire:model.live.debounce.200ms="dateFilter" type="date" id="mobile-date-filter"
+                            @input="dateEmpty = $event.target.value === ''"
+                            class="peer flex w-full rounded-full border-gray-300 text-xs focus:border-blue-500 focus:ring-blue-500">
+                        <div x-show="dateEmpty"
+                            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-gray-400">
+                            <span class="flex flex-row items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20" fill="currentColor" class="size-5">
+                                    <path
+                                        d="M5.25 12a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75H6a.75.75 0 0 1-.75-.75V12ZM6 13.25a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 0 0 .75-.75V14a.75.75 0 0 0-.75-.75H6ZM7.25 12a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75H8a.75.75 0 0 1-.75-.75V12ZM8 13.25a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 0 0 .75-.75V14a.75.75 0 0 0-.75-.75H8ZM9.25 10a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75H10a.75.75 0 0 1-.75-.75V10ZM10 11.25a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 0 0 .75-.75V12a.75.75 0 0 0-.75-.75H10ZM9.25 14a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75H10a.75.75 0 0 1-.75-.75V14ZM12 9.25a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 0 0 .75-.75V10a.75.75 0 0 0-.75-.75H12ZM11.25 12a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75H12a.75.75 0 0 1-.75-.75V12ZM12 13.25a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 0 0 .75-.75V14a.75.75 0 0 0-.75-.75H12ZM13.25 10a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 .75.75v.01a.75.75 0 0 1-.75.75H14a.75.75 0 0 1-.75-.75V10ZM14 11.25a.75.75 0 0 0-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 0 0 .75-.75V12a.75.75 0 0 0-.75-.75H14Z" />
+                                    <path fill-rule="evenodd"
+                                        d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                Pilih tanggal</span>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="flex w-full justify-end">
+                    <button wire:click="clearFilters"
+                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="mr-2 h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Reset Filter
+                    </button>
+                </div>
+            </div>
+
+
+        </div>
+
         <!-- Action Button -->
-        <div class="mt-5 flex flex-row items-center justify-between">
+        <div class="mt-5 flex flex-col-reverse items-start justify-between md:flex-row md:items-center">
             <button @click="createSessionModal = true"
-                class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:bg-blue-700">
+                class="mt-4 inline-flex items-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:bg-blue-700 md:mt-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                     stroke="currentColor" class="mr-2 h-5 w-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Buat Pertemuan
             </button>
-            <div class="flex flex-row items-center gap-2">
-                <a href="{{ route('agenda.report', $subjectClass->id) }}" target="_blank"
-                    class="inline-flex items-center rounded-full border border-transparent bg-blue-600 px-4 py-2 font-inter text-xs font-medium text-white ring-blue-300 transition duration-150 ease-in-out hover:bg-blue-700 focus:border-blue-900 focus:outline-none focus:ring active:bg-blue-900 disabled:opacity-25">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Unduh Agenda KBM
-                </a>
-                <a href="{{ route('attendance.report', $subjectClass->id) }}" target="_blank"
-                    class="flex items-center rounded-full border border-transparent bg-green-600 px-4 py-2 font-inter text-xs font-medium text-white ring-green-300 transition duration-150 ease-in-out hover:bg-green-700 focus:border-green-900 focus:outline-none focus:ring active:bg-green-900 disabled:opacity-25">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    </svg>
-                    Unduh Laporan Kehadiran
-                </a>
+            <div class="flex flex-row items-center gap-3 md:mt-0">
+                <!-- Modal Filter Bulan untuk Laporan -->
+                <div x-data="{ monthFilterModal: false, reportType: null }" x-on:keydown.esc.window="monthFilterModal = false">
+                    <!-- Tombol unduh dengan onclick yang memicu modal -->
+                    <div class="flex flex-row items-center gap-2">
+                        <button @click="monthFilterModal = true; reportType = 'agenda'"
+                            class="inline-flex items-center rounded-full border border-blue-600 px-4 py-2 font-inter text-xs font-medium text-blue-600 ring-blue-300 transition duration-150 ease-in-out hover:bg-blue-700 hover:text-white focus:border-blue-900 focus:outline-none focus:ring active:bg-blue-900 disabled:opacity-25">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Agenda KBM
+                        </button>
+                        <button @click="monthFilterModal = true; reportType = 'attendance'"
+                            class="flex items-center rounded-full border border-transparent bg-green-600 px-4 py-2 font-inter text-xs font-medium text-white ring-green-300 transition duration-150 ease-in-out hover:bg-green-700 focus:border-green-900 focus:outline-none focus:ring active:bg-green-900 disabled:opacity-25">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            </svg>
+                            Laporan Kehadiran
+                        </button>
+                    </div>
+
+                    <!-- Modal Pemilihan Bulan -->
+                    <div x-cloak x-show="monthFilterModal" x-transition.opacity.duration.200ms
+                        x-on:click.self="monthFilterModal = false"
+                        class="fixed inset-0 z-50 flex w-full items-center justify-center bg-black/50 p-4 pb-8 lg:p-8"
+                        role="dialog" aria-modal="true">
+
+                        <!-- Modal Dialog -->
+                        <div x-show="monthFilterModal" x-transition:enter="transition ease-out duration-200 delay-100"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            class="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
+
+                            <!-- Dialog Header -->
+                            <div class="bg-blue-50 px-6 py-4">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    <span
+                                        x-text="reportType === 'agenda' ? 'Unduh Agenda KBM' : 'Unduh Laporan Kehadiran'"></span>
+                                </h3>
+                                <p class="mt-1 text-sm text-gray-500">Pilih periode laporan yang ingin diunduh.</p>
+                            </div>
+
+                            <!-- Dialog Body -->
+                            <div class="px-6 py-4">
+                                <form x-data="{ month: new Date().getMonth() + 1, year: new Date().getFullYear() }" x-ref="monthFilterForm" method="GET"
+                                    :action="reportType === 'agenda' ? '{{ route('agenda.report', $subjectClass->id) }}' :
+                                        '{{ route('attendance.report', $subjectClass->id) }}'">
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="mb-4">
+                                            <label for="month"
+                                                class="block text-sm font-medium text-gray-700">Bulan</label>
+                                            <select x-model="month" name="month" id="month"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                                <option value="1">Januari</option>
+                                                <option value="2">Februari</option>
+                                                <option value="3">Maret</option>
+                                                <option value="4">April</option>
+                                                <option value="5">Mei</option>
+                                                <option value="6">Juni</option>
+                                                <option value="7">Juli</option>
+                                                <option value="8">Agustus</option>
+                                                <option value="9">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label for="year"
+                                                class="block text-sm font-medium text-gray-700">Tahun</label>
+                                            <select x-model="year" name="year" id="year"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                                @for ($y = date('Y') - 2; $y <= date('Y'); $y++)
+                                                    <option value="{{ $y }}">{{ $y }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dialog Footer -->
+                                    <div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+                                        <a href="#"
+                                            @click.prevent="monthFilterModal = false; 
+                       window.location.href = reportType === 'agenda' 
+                           ? '{{ route('agenda.report', $subjectClass->id) }}'
+                           : '{{ route('attendance.report', $subjectClass->id) }}';"
+                                            class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                                            Unduh semua periode
+                                        </a>
+                                        <div>
+                                            <button type="button" @click="monthFilterModal = false"
+                                                class="mr-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                                                Batal
+                                            </button>
+                                            <button type="submit" @click="monthFilterModal = false"
+                                                class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                                                Unduh
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Sessions List as Table -->
-        <div class="mt-6 w-full">
+        <div class="mt-3 w-full md:mt-6">
             <div class="mb-4 flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                <h3 class="font-inter text-lg font-medium text-gray-800">Daftar Pertemuan</h3>
-                <div class="text-sm text-gray-500">Total: {{ count($sessions) }} pertemuan</div>
+                <h3 class="hidden font-inter text-lg font-medium text-gray-800 md:block">Daftar Pertemuan</h3>
+                <div class="hidden text-sm text-gray-500 md:block">Total: {{ count($sessions) }} pertemuan</div>
             </div>
 
             <!-- Search and Filters -->
-            <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="mb-4 hidden grid-cols-1 gap-4 md:grid md:grid-cols-3">
                 <div class="flex rounded-md shadow-sm">
                     <div class="relative flex flex-grow items-stretch">
                         <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -706,6 +867,11 @@ new #[Layout('layouts.app')] class extends Component {
                                             <div class="ml-4">
                                                 <div class="text-sm font-medium text-gray-900">
                                                     {{ $session['subject_title'] }}</div>
+                                                @if ($session['created_by_substitute'] !== null)
+                                                    <div class="text-xs text-gray-500">
+                                                        Kelas digantikan
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>

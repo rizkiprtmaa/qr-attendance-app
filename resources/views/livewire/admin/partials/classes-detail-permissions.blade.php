@@ -15,7 +15,7 @@
     </div>
 
     <!-- Permissions List -->
-    <div class="overflow-x-auto">
+    <div class="hidden overflow-x-auto md:block">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -120,5 +120,71 @@
                 @endif
             </tbody>
         </table>
+    </div>
+
+    {{-- Mobile View --}}
+    <div class="flex flex-col md:hidden">
+        <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow">
+            @forelse ($pendingPermissions as $permission)
+                <div class="p-4 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-row items-center">
+                            <p class="font-inter text-sm font-medium text-slate-900">
+                                {{ $permission->user->name }} <span
+                                    class="{{ $permission->type === 'sakit' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }} ms-1 inline-flex rounded-lg px-2 text-xs font-semibold leading-5">
+                                    {{ ucfirst($permission->type) }}
+                                </span></p>
+                        </div>
+
+                        <div>
+                            @if ($permission->status === 'approved')
+                                <span
+                                    class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
+                                    Disetujui
+                                </span>
+                            @elseif($permission->status === 'rejected')
+                                <span
+                                    class="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
+                                    Ditolak
+                                </span>
+                            @else
+                                <span
+                                    class="inline-flex rounded-full bg-gray-100 px-2 text-xs font-semibold leading-5 text-gray-800">
+                                    Menunggu
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between">
+                        <div class="flex flex-row items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                class="size-4">
+                                <path fill-rule="evenodd"
+                                    d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            <span class="ml-2 pt-0.5 text-xs text-slate-900">
+                                {{ \Carbon\Carbon::parse($permission->permission_date)->locale('id')->translatedFormat('d F Y') }}
+                            </span>
+                        </div>
+                        <div class="flex flex-row gap-3">
+                            <button class="pe-2 text-xs font-medium text-blue-600 hover:text-blue-900"
+                                wire:click="viewPermissionDetail({{ $permission->id }})">Detail</button>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="p-6">
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-300" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-500">Tidak ada pengajuan izin yang ditemukan</p>
+                    </div>
+                </div>
+            @endforelse
+        </div>
     </div>
 </div>

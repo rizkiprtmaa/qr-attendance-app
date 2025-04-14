@@ -310,9 +310,9 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="mt-12 md:mt-0">
 
-    <div class="mt-2">
+    <div class="mt-2 hidden md:block">
         @php
             $hour = \Carbon\Carbon::now('Asia/Jakarta')->hour;
             if ($hour >= 5 && $hour < 12) {
@@ -333,8 +333,8 @@ new class extends Component {
         <div class="overflow-hidden rounded-lg bg-white shadow">
             <div class="flex items-center p-5">
                 <div class="flex-shrink-0 rounded-full bg-blue-100 p-3">
-                    <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
+                    <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>

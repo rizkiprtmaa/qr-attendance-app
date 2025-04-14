@@ -38,12 +38,12 @@ new class extends Component {
 
 <section>
     <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Profile Photo') }}
+        <h2 class="font-inter text-lg font-medium text-gray-900">
+            {{ __('Foto Profil') }}
         </h2>
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __('Update your account profile photo.') }}
+        <p class="mt-1 font-inter text-sm text-gray-600">
+            {{ __('Update foto profilmu.') }}
         </p>
     </header>
 
@@ -68,13 +68,17 @@ new class extends Component {
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button type="submit" wire:loading.attr="disabled" wire:loading.class="opacity-75">
-                <span wire:loading.remove wire:target="updateProfilePhoto">{{ __('Save') }}</span>
-                <span wire:loading wire:target="updateProfilePhoto">{{ __('Saving...') }}</span>
-            </x-primary-button>
+
+
+            <button
+                class="inline-flex items-center rounded-md border border-transparent bg-blue-500 px-4 py-2 font-inter text-sm text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                type="submit">
+                <span wire:loading.remove wire:target="updateProfilePhoto">{{ __('Simpan') }}</span>
+                <span wire:loading wire:target="updateProfilePhoto">{{ __('Menyimpan...') }}</span>
+            </button>
 
             <x-action-message class="me-3" on="profile-photo-updated">
-                {{ __('Saved.') }}
+                {{ __('Foto profilmu berhasil diubah.') }}
             </x-action-message>
         </div>
     </form>

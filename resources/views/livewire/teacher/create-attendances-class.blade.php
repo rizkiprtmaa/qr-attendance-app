@@ -4,6 +4,7 @@ use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use App\Models\SubjectClass;
 use App\Models\Classes;
+use App\Models\SubjectClassSession;
 use App\Models\Major;
 
 new class extends Component {
@@ -82,6 +83,8 @@ new class extends Component {
             'majors' => Major::all(),
             'subjectClasses' => $subjectClasses,
             'totalClasses' => $subjectClasses->total(),
+            'totalSessions' => SubjectClassSession::whereIn('subject_class_id', $subjectClasses->pluck('id'))->count(),
+            'totalHours' => SubjectClassSession::whereIn('subject_class_id', $subjectClasses->pluck('id'))->whereNull('created_by_substitute')->selectRaw('SUM(TIMESTAMPDIFF(HOUR, start_time, end_time)) as total_hours')->value('total_hours') ?? 0,
         ]);
     }
 
@@ -280,17 +283,27 @@ new class extends Component {
     toggleMenu(id) {
         this.sessionMenuOpen = this.sessionMenuOpen === id ? null : id;
     }
-}">
+}" class="mt-12 md:mt-0">
+    <div class="item-center relative mb-5 flex w-full text-gray-500 md:mt-0 md:hidden">
+        <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari kelas..."
+            class="w-full rounded-full border border-gray-300 px-4 py-2 pl-8 text-sm" />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+            class="absolute left-3 top-3 h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+    </div>
     <div class="flex flex-row justify-between md:justify-start">
         <button @click="showCreateClasses = true" type="button"
             class="flex flex-row items-center gap-1 rounded-full bg-blue-600 px-4 py-2 font-inter text-sm text-white shadow-md hover:bg-blue-700">Buat
-            Kelas<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5">
+            Mata Pelajaran<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                class="size-5">
                 <path fill-rule="evenodd"
                     d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z"
                     clip-rule="evenodd" />
             </svg>
         </button>
-        <button @click="openSummary = !openSummary" class="inline-block px-4 py-2 text-xs text-gray-500 md:hidden"
+        <button @click="openSummary = !openSummary" class="hidden px-4 py-2 text-xs text-gray-500"
             x-text="openSummary ? 'Tutup Ringkasan' : 'Tampilkan Ringkasan'">
 
         </button>
@@ -298,19 +311,18 @@ new class extends Component {
 
     </div>
 
-    <div class="mb-6 mt-6 grid grid-cols-2 gap-4 md:grid-cols-4" x-show="openSummary || window.innerWidth >= 768"
-        x-transition x-cloak>
+    <div class="mb-6 mt-6 hidden grid-cols-2 gap-4 md:grid md:grid-cols-4">
         <div class="rounded-lg bg-white p-4 shadow-md">
             <h3 class="mb-2 text-gray-500">Kelas Aktif</h3>
             <p class="text-2xl font-bold">{{ $totalClasses }}</p>
         </div>
         <div class="rounded-lg bg-white p-4 shadow-md">
             <h3 class="mb-2 text-gray-500">Total Pertemuan</h3>
-            <p class="text-2xl font-bold">2</p>
+            <p class="text-2xl font-bold">{{ $totalSessions }}</p>
         </div>
         <div class="rounded-lg bg-white p-4 shadow-md">
             <h3 class="mb-2 text-gray-500">Jumlah Jam</h3>
-            <p class="text-2xl font-bold">3</p>
+            <p class="text-2xl font-bold">{{ $totalHours }}</p>
         </div>
         <div class="rounded-lg bg-white p-4 shadow-md">
             <h3 class="mb-2 text-gray-500">Kelas Pengganti</h3>
@@ -378,19 +390,19 @@ new class extends Component {
 
 
     <div>
-        <div class="mb-6 mt-10 flex items-center">
+        <div class="mb-6 mt-10 hidden items-center md:flex">
             <p class="font-inter text-lg font-medium">Kelas Aktif</p>
 
         </div>
 
         <!-- Header Filters -->
-        <div class="mb-4 flex flex-col items-center justify-between text-sm md:flex-row">
-            <div class="flex space-x-5">
+        <div class="mb-4 mt-8 flex items-center justify-start text-sm md:mt-0 md:flex-row md:justify-between">
+            <div class="flex space-x-2 md:space-x-5">
                 <button x-on:click="$wire.sortColumnBy('created_at')" class="flex items-center"
                     :class="{
-                        'font-medium text-white bg-blue-500 py-1.5 px-3 text-xs md:text-base rounded-full': '{{ $sortBy }}'
+                        'font-medium text-white bg-blue-500 py-2 px-3 text-xs md:text-base rounded-full': '{{ $sortBy }}'
                         === 'created_at',
-                        'text-gray-500 hover:text-gray-700 text-xs md:text-base': '{{ $sortBy }}'
+                        'text-gray-500 hover:text-gray-700 text-xs md:text-base border rounded-full py-2 px-3': '{{ $sortBy }}'
                         !== 'created_at'
                     }">
                     Terbaru
@@ -408,6 +420,14 @@ new class extends Component {
                                     d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="ml-1 h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+                        </svg>
+
+
                     @endif
                 </button>
 
@@ -415,10 +435,10 @@ new class extends Component {
                     :class="{
                         'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full text-xs md:text-base': '{{ $sortBy }}'
                         === 'class_name',
-                        'text-gray-500 hover:text-gray-700 text-xs md:text-base': '{{ $sortBy }}'
+                        'text-gray-500 hover:text-gray-700 text-xs md:text-base border rounded-full py-2 px-3': '{{ $sortBy }}'
                         !== 'class_name'
                     }">
-                    Nama Kelas
+                    Mapel
                     @if ($sortBy === 'class_name')
                         @if ($sortDirection === 'asc')
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -433,6 +453,13 @@ new class extends Component {
                                     d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                        </svg>
+
                     @endif
                 </button>
 
@@ -441,7 +468,7 @@ new class extends Component {
                     :class="{
                         'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full text-xs md:text-base': '{{ $sortBy }}'
                         === 'class',
-                        'text-gray-500 hover:text-gray-700 text-xs md:text-base': '{{ $sortBy }}'
+                        'text-gray-500 hover:text-gray-700 text-xs md:text-base border rounded-full py-2 px-3': '{{ $sortBy }}'
                         !== 'class'
                     }">
                     Kelas
@@ -459,6 +486,13 @@ new class extends Component {
                                     d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                        </svg>
+
                     @endif
                 </button>
 
@@ -466,7 +500,7 @@ new class extends Component {
                     :class="{
                         'font-medium text-white bg-blue-500 py-1.5 px-3 rounded-full text-xs md:text-base': '{{ $sortBy }}'
                         === 'major',
-                        'text-gray-500 hover:text-gray-700 text-xs md:text-base': '{{ $sortBy }}'
+                        'text-gray-500 hover:text-gray-700 text-xs md:text-base border rounded-full py-2 px-3': '{{ $sortBy }}'
                         !== 'major'
                     }">
                     Jurusan
@@ -484,11 +518,18 @@ new class extends Component {
                                     d="M8.25 6.75 12 3m0 0 3.75 3.75M12 3v18" />
                             </svg>
                         @endif
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="ml-1 h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205 3 1m1.5.5-1.5-.5M6.75 7.364V3h-3v18m3-13.636 10.5-3.819" />
+                        </svg>
+
                     @endif
                 </button>
             </div>
 
-            <div class="item-center relative mt-4 text-gray-500 md:mt-0">
+            <div class="item-center relative mt-4 hidden text-gray-500 md:mt-0 md:block">
                 <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari kelas..."
                     class="w-64 rounded-full border border-gray-300 px-4 py-2 pl-8 text-sm" />
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -676,7 +717,7 @@ new class extends Component {
 
 
     <!-- Perbaikan card mobile dengan notifikasi jumlah pertemuan -->
-    <div class="mt-3 divide-y divide-gray-200 rounded-lg bg-white shadow md:hidden">
+    <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow md:hidden">
         @foreach ($subjectClasses as $subjectClass)
             <div class="p-4">
                 <div class="flex flex-row items-center justify-between">
@@ -710,7 +751,7 @@ new class extends Component {
                     <div class="relative flex flex-row items-center text-center">
                         <div class="relative inline-block text-left">
                             <button @click="toggleMenu({{ $subjectClass->id }})" type="button"
-                                class="rounded-full bg-blue-300 px-3 text-white hover:bg-blue-100 hover:text-gray-700 focus:outline-none">
+                                class="rounded-md bg-blue-300 px-3 text-white hover:bg-blue-100 hover:text-gray-700 focus:outline-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
                                     <path stroke-linecap="round" stroke-linejoin="round"

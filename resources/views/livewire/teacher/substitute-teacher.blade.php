@@ -72,8 +72,6 @@ new class extends Component {
                 'reason' => $this->reason,
                 'status' => 'pending',
             ]);
-            // Hapus dd statement berikut karena menghentikan eksekusi kode
-            // @dd($this->selectedUserId, $this->selectedSubjectClassId, $this->startDate, $this->endDate, $this->reason);
 
             $this->reset(['selectedUserId', 'selectedSubjectClassId', 'startDate', 'endDate', 'reason']);
             $this->showRequestModal = false;
@@ -115,7 +113,7 @@ new class extends Component {
 };
 ?>
 
-<div>
+<div class="mt-12 md:mt-0">
     <!-- Toast Notification Component -->
     <div x-data="{
         toastMessage: '',
@@ -171,8 +169,6 @@ new class extends Component {
     </div>
 
     <div>
-
-
         <!-- Tab untuk switching antara Cari Kelas dan Permintaan Saya -->
         <div x-data="{ activeTab: 'available' }" class="mb-6">
             <div class="border-b border-gray-200">
@@ -206,9 +202,9 @@ new class extends Component {
                     </div>
                 </div>
 
-                <!-- Daftar Kelas Tersedia -->
-                <div class="">
-                    <div class="mt-4 overflow-x-scroll shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                <!-- Tampilan Tabel untuk MD ke atas -->
+                <div class="hidden md:block">
+                    <div class="mt-4 shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
                         <table class="min-w-full divide-y divide-gray-300">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -259,44 +255,152 @@ new class extends Component {
                         </table>
                     </div>
                 </div>
+
+                <!-- Tampilan Card untuk Mobile/SM -->
+                <div class="mt-4 space-y-4 md:hidden">
+                    @forelse ($availableClasses as $class)
+                        <div class="overflow-hidden rounded-lg bg-white shadow">
+                            <div class="p-4">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-medium text-gray-900">{{ $class->class_name }}</h3>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="mb-2 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-gray-400"
+                                            viewBox="0 0 20 20" fill="currentColor">
+                                            <path
+                                                d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                        </svg>
+                                        <span class="text-sm text-gray-700">{{ $class->user->name }}</span>
+                                    </div>
+                                    <div class="mb-2 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-gray-400"
+                                            viewBox="0 0 20 20" fill="currentColor">
+                                            <path
+                                                d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                        </svg>
+                                        <span class="text-sm text-gray-700">{{ $class->classes->name }} -
+                                            {{ $class->classes->major->name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border-t border-gray-200 bg-gray-50 px-4 py-3 text-right">
+                                <button wire:click="showRequestForm({{ $class->user->id }}, {{ $class->id }})"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    Ajukan Penggantian
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="rounded-lg bg-white p-6 text-center shadow">
+                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada kelas</h3>
+                            <p class="mt-1 text-sm text-gray-500">Tidak ada kelas yang tersedia untuk penggantian</p>
+                        </div>
+                    @endforelse
+                </div>
             </div>
 
             <!-- Panel Permintaan Saya -->
             <div x-show="activeTab === 'requests'">
-                <div class="mt-4 w-full overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-300">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col"
-                                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Guru
-                                </th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                    Mata Pelajaran</th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                    Tanggal</th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                    Status</th>
-                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                                    <span class="sr-only">Aksi</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                            @forelse ($myRequests as $request)
+                <!-- Tampilan Tabel untuk MD ke atas -->
+                <div class="hidden md:block">
+                    <div class="mt-4 w-full overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
-                                        <div class="font-medium text-gray-900">{{ $request->user->name }}</div>
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        {{ $request->subjectClass->class_name }}
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
-                                        @if ($request->end_date)
-                                            - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
-                                        @endif
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                    <th scope="col"
+                                        class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                                        Guru
+                                    </th>
+                                    <th scope="col"
+                                        class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                        Mata Pelajaran</th>
+                                    <th scope="col"
+                                        class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                        Tanggal</th>
+                                    <th scope="col"
+                                        class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                        Status</th>
+                                    <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                        <span class="sr-only">Aksi</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                @forelse ($myRequests as $request)
+                                    <tr>
+                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                                            <div class="font-medium text-gray-900">{{ $request->user->name }}</div>
+                                        </td>
+                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                            {{ $request->subjectClass->class_name }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
+                                            @if ($request->end_date)
+                                                - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
+                                            @endif
+                                        </td>
+                                        <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                            @if ($request->status === 'pending')
+                                                <span
+                                                    class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Menunggu</span>
+                                            @elseif($request->status === 'approved')
+                                                <span
+                                                    class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">Disetujui</span>
+                                            @elseif($request->status === 'rejected')
+                                                <span
+                                                    class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">Ditolak</span>
+                                            @else
+                                                <span
+                                                    class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Selesai</span>
+                                            @endif
+                                        </td>
+                                        <td
+                                            class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                            @if ($request->status === 'approved')
+                                                <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
+                                                    class="text-blue-600 hover:text-blue-900">
+                                                    Kelola Kelas
+                                                </a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="py-6 text-center text-sm text-gray-500">
+                                            Anda belum mengajukan permintaan penggantian
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+
+                        <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                            {{ $myRequests->links() }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tampilan Card untuk Mobile/SM -->
+                <div class="mt-4 space-y-4 md:hidden">
+                    @forelse ($myRequests as $request)
+                        <div class="overflow-hidden rounded-lg bg-white shadow">
+                            <div class="p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-medium text-gray-900">{{ $request->subjectClass->class_name }}
+                                        </h3>
+                                        <p class="text-sm text-gray-500">{{ $request->user->name }}</p>
+                                    </div>
+                                    <div>
                                         @if ($request->status === 'pending')
                                             <span
                                                 class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Menunggu</span>
@@ -310,28 +414,49 @@ new class extends Component {
                                             <span
                                                 class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Selesai</span>
                                         @endif
-                                    </td>
-                                    <td
-                                        class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                        @if ($request->status === 'approved')
-                                            <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
-                                                class="text-blue-600 hover:text-blue-900">
-                                                Kelola Kelas
-                                            </a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="py-6 text-center text-sm text-gray-500">
-                                        Anda belum mengajukan permintaan penggantian
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="mb-2 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-gray-400"
+                                            viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="text-sm text-gray-700">
+                                            {{ \Carbon\Carbon::parse($request->start_date)->format('d M Y') }}
+                                            @if ($request->end_date)
+                                                - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
+                                            @endif
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            @if ($request->status === 'approved')
+                                <div class="border-t border-gray-200 bg-gray-50 px-4 py-3 text-right">
+                                    <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
+                                        class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                        Kelola Kelas
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="rounded-lg bg-white p-6 text-center shadow">
+                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada permintaan</h3>
+                            <p class="mt-1 text-sm text-gray-500">Anda belum mengajukan permintaan penggantian</p>
+                        </div>
+                    @endforelse
 
-                    <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                    <div class="py-2">
                         {{ $myRequests->links() }}
                     </div>
                 </div>
@@ -435,8 +560,8 @@ new class extends Component {
                         Batal
                     </button>
                 </div>
+                </form>
             </div>
-            </form>
         </div>
     </div>
 </div>

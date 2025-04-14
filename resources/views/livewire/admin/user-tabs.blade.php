@@ -11,7 +11,7 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="mt-12 md:mt-0">
     <div class="border-b border-gray-200">
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
             <a href="{{ route('users') }}" wire:navigate

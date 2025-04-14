@@ -9,15 +9,22 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
-
 class ClassReportController extends Controller
 {
-    public function generateAgendaReport(SubjectClass $subjectClass)
+    public function generateAgendaReport(Request $request, SubjectClass $subjectClass)
     {
-        // Dapatkan sesi kelas
-        $sessions = SubjectClassSession::where('subject_class_id', $subjectClass->id)
-            ->orderBy('class_date', 'asc')
-            ->get();
+        // Filter berdasarkan bulan dan tahun jika ada
+        $query = SubjectClassSession::where('subject_class_id', $subjectClass->id);
+
+        if ($request->has('month') && $request->has('year')) {
+            $month = $request->month;
+            $year = $request->year;
+            $query->whereMonth('class_date', $month)
+                ->whereYear('class_date', $year);
+        }
+
+        // Dapatkan sesi kelas yang sudah difilter
+        $sessions = $query->orderBy('class_date', 'asc')->get();
 
         $className = $subjectClass->classes->name;
         $majorName = $subjectClass->classes->major->name;
@@ -26,35 +33,56 @@ class ClassReportController extends Controller
             ? now()->year . "/" . (now()->year + 1)
             : (now()->year - 1) . "/" . now()->year;
 
-        // Dalam fungsi downloadAttendanceReport(), tambahkan:
+        // Format periode laporan
+        $periode = '';
+        if ($request->has('month') && $request->has('year')) {
+            $periode = Carbon::createFromDate($request->year, $request->month, 1)->locale('id')->isoFormat('MMMM Y');
+        } else {
+            $periode = 'Semua Periode';
+        }
+
+        // Tambahkan logo
         $logoProvBase64 = base64_encode(file_get_contents(public_path('images/logo-prov.png')));
         $logoSekolahBase64 = base64_encode(file_get_contents(public_path('images/logo-sekolah.png')));
-
-        $data['logoProvData'] = 'data:image/png;base64,' . $logoProvBase64;
-        $data['logoSekolahData'] = 'data:image/png;base64,' . $logoSekolahBase64;
 
         $data = [
             'title' => 'Agenda Kegiatan Belajar Mengajar',
             'className' => $className . ' - ' . $majorName,
             'subjectName' => $subjectClass->class_name,
             'semester' => $semester . ' - ' . $tahunAjaran,
+            'periode' => $periode, // Tambahkan periode laporan
             'sessions' => $sessions,
             'teacherName' => $subjectClass->user->name,
-            'logoProvData' => $data['logoProvData'],
-            'logoSekolahData' => $data['logoSekolahData'],
+            'logoProvData' => 'data:image/png;base64,' . $logoProvBase64,
+            'logoSekolahData' => 'data:image/png;base64,' . $logoSekolahBase64,
         ];
 
         $pdf = PDF::loadView('pdfs.agenda-report', $data);
 
-        return $pdf->download('agenda-kbm-' . $subjectClass->class_name . '.pdf');
+        // Tambahkan periode ke nama file jika ada
+        $filename = 'agenda-kbm-' . $subjectClass->class_name;
+        if ($request->has('month') && $request->has('year')) {
+            $filename .= '-' . $periode;
+        }
+        $filename .= '.pdf';
+
+        return $pdf->download($filename);
     }
 
-    public function generateAttendanceReport(SubjectClass $subjectClass)
+    public function generateAttendanceReport(Request $request, SubjectClass $subjectClass)
     {
-        // Dapatkan sesi kelas
-        $sessions = SubjectClassSession::where('subject_class_id', $subjectClass->id)
-            ->orderBy('class_date', 'asc')
-            ->get();
+        // Filter berdasarkan bulan dan tahun jika ada
+        $query = SubjectClassSession::where('subject_class_id', $subjectClass->id);
+
+        if ($request->has('month') && $request->has('year')) {
+            $month = $request->month;
+            $year = $request->year;
+            $query->whereMonth('class_date', $month)
+                ->whereYear('class_date', $year);
+        }
+
+        // Dapatkan sesi kelas yang sudah difilter
+        $sessions = $query->orderBy('class_date', 'asc')->get();
 
         // Dapatkan daftar siswa
         $students = $subjectClass->classes->student()
@@ -98,30 +126,43 @@ class ClassReportController extends Controller
             ? now()->year . "/" . (now()->year + 1)
             : (now()->year - 1) . "/" . now()->year;
 
-        // Dalam fungsi downloadAttendanceReport(), tambahkan:
+        // Format periode laporan
+        $periode = '';
+        if ($request->has('month') && $request->has('year')) {
+            $periode = Carbon::createFromDate($request->year, $request->month, 1)->locale('id')->isoFormat('MMMM Y');
+        } else {
+            $periode = 'Semua Periode';
+        }
+
+        // Tambahkan logo
         $logoProvBase64 = base64_encode(file_get_contents(public_path('images/logo-prov.png')));
         $logoSekolahBase64 = base64_encode(file_get_contents(public_path('images/logo-sekolah.png')));
-
-        $data['logoProvData'] = 'data:image/png;base64,' . $logoProvBase64;
-        $data['logoSekolahData'] = 'data:image/png;base64,' . $logoSekolahBase64;
 
         $data = [
             'title' => 'Laporan Kehadiran Mata Pelajaran',
             'className' => $className . ' - ' . $majorName,
             'subjectName' => $subjectClass->class_name,
             'semester' => $semester . ' - ' . $tahunAjaran,
+            'periode' => $periode, // Tambahkan periode laporan
             'sessions' => $sessions,
             'students' => $students,
             'attendanceData' => $attendanceData,
             'attendanceSummary' => $attendanceSummary,
             'teacherName' => $subjectClass->user->name,
-            'logoProvData' => $data['logoProvData'],
-            'logoSekolahData' => $data['logoSekolahData'],
+            'logoProvData' => 'data:image/png;base64,' . $logoProvBase64,
+            'logoSekolahData' => 'data:image/png;base64,' . $logoSekolahBase64,
         ];
 
         $pdf = PDF::loadView('pdfs.session-summary-report', $data)
             ->setPaper('a4', 'landscape');
 
-        return $pdf->download('laporan-kehadiran-' . $subjectClass->class_name . '.pdf');
+        // Tambahkan periode ke nama file jika ada
+        $filename = 'laporan-kehadiran-' . $subjectClass->class_name;
+        if ($request->has('month') && $request->has('year')) {
+            $filename .= '-' . $periode;
+        }
+        $filename .= '.pdf';
+
+        return $pdf->download($filename);
     }
 }

@@ -6,9 +6,16 @@
     <title>Laporan Kehadiran Bulanan</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
             font-size: 11px;
             line-height: 1.3;
+        }
+
+        @font-face {
+            font-family: 'DejaVu Sans';
+            src: url('{{ public_path('fonts/dejavu-sans-webfont.ttf') }}');
+            font-weight: normal;
+            font-style: normal;
         }
 
         .container {
@@ -58,7 +65,7 @@
         th,
         td {
             border: 1px solid black;
-            padding: 3px;
+            padding: 2px;
             text-align: center;
             font-size: 10px;
         }
@@ -99,6 +106,8 @@
 
         .status-hadir {
             font-weight: bold;
+            font-size: 15px;
+            padding: none;
         }
 
         .status-terlambat {
@@ -173,7 +182,7 @@
                     <th rowspan="2" style="width: 30px;">No</th>
                     <th rowspan="2" style="width: 180px;">Nama Siswa</th>
                     <th colspan="{{ is_countable($days) ? count($days) : 0 }}" style="text-align: center;">TANGGAL</th>
-                    <th colspan="4" class="summary-col">KEHADIRAN</th>
+                    <th colspan="3" class="summary-col">KEHADIRAN</th>
                     <th rowspan="2" style="width: 40px;">JML</th>
                 </tr>
                 <tr>
@@ -182,7 +191,7 @@
                             style="width: 20px; {{ isset($isWeekend[$day]) && $isWeekend[$day] ? 'background-color: #dadada;' : '' }}">
                             {{ $day }}</th>
                     @endforeach
-                    <th class="summary-col" style="width: 30px;">H</th>
+
                     <th class="summary-col" style="width: 30px;">S</th>
                     <th class="summary-col" style="width: 30px;">I</th>
                     <th class="summary-col" style="width: 30px;">A</th>
@@ -200,7 +209,8 @@
                                 @if (isset($student['days'][$day]))
                                     @switch($student['days'][$day])
                                         @case('H')
-                                            <span class="status-hadir">H</span>
+                                            <span class="status-hadir">✓
+                                            </span>
                                         @break
 
                                         @case('T')
@@ -226,7 +236,7 @@
                             </td>
                         @endforeach
 
-                        <td class="summary-col">{{ $student['summary']['present'] ?? 0 }}</td>
+
                         <td class="summary-col">{{ $student['summary']['sick'] ?? 0 }}</td>
                         <td class="summary-col">{{ $student['summary']['permission'] ?? 0 }}</td>
                         <td class="summary-col">{{ $student['summary']['absent'] ?? 0 }}</td>

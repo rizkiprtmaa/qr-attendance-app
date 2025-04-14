@@ -120,7 +120,7 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="mt-12 md:mt-0">
 
 
     <!-- Tab Navigation -->
@@ -279,7 +279,7 @@ new class extends Component {
             </div>
 
             <!-- Tampilan mobile (card list) - Hanya ditampilkan pada layar kecil (sm ke bawah) -->
-            <div class="block md:hidden">
+            <div class="flex flex-col overflow-auto md:hidden">
                 <div class="divide-y divide-gray-200">
                     @foreach ($permissions as $permission)
                         <div class="p-4">

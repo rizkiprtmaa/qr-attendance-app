@@ -205,38 +205,45 @@ new #[Layout('layouts.app')] class extends Component {
 
     <div class="mx-auto mt-10 max-w-7xl px-2 py-3 md:mt-0 md:px-4 lg:px-8">
         <!-- Session Info Card -->
-        <div class="mb-6 overflow-hidden rounded-lg bg-white shadow">
+        <div class="mb-6 overflow-hidden rounded-lg bg-gradient-to-r from-blue-200 to-blue-100 shadow">
             <div class="px-4 py-5 sm:px-6">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-col items-start sm:justify-between">
                     <div>
                         <h3 class="font-inter text-lg font-medium leading-6 text-gray-900">{{ $subjectTitle }}</h3>
-                        <p class="mt-1 max-w-2xl font-inter text-sm text-gray-500">{{ $className }}</p>
-                        <p class="mt-1 max-w-2xl font-inter text-sm text-gray-500">{{ $studentClassName }} -
-                            {{ $majorName }}</p>
 
                     </div>
-                    <div class="mt-3 flex flex-col sm:mt-0">
-                        <p class="flex items-center text-sm text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                class="mr-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
-                                    clip-rule="evenodd" />
-                            </svg>
+                    <div class="flex w-full flex-row items-center justify-between">
+                        <div>
+                            <p class="mt-1 max-w-2xl truncate font-inter text-sm text-slate-700">{{ $className }}</p>
+                            <p class="mt-1 max-w-2xl truncate font-inter text-sm text-slate-700">{{ $studentClassName }}
+                                -
+                                {{ $majorName }}</p>
+                        </div>
+                        <div class="mt-3 flex flex-col items-end sm:mt-0">
+                            <p class="flex items-center text-sm text-slate-700">
 
-                            {{ \Carbon\Carbon::parse($classDate)->locale('id')->translatedFormat('l, d F Y') }}
-                        </p>
-                        <p class="mt-1 flex items-center text-sm text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                class="mr-1 h-4 w-4">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z"
-                                    clip-rule="evenodd" />
-                            </svg>
 
-                            {{ \Carbon\Carbon::parse($startTime)->format('H:i') }} -
-                            {{ \Carbon\Carbon::parse($endTime)->format('H:i') }}
-                        </p>
+                                {{ \Carbon\Carbon::parse($classDate)->locale('id')->translatedFormat('l, d F Y') }}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="ml-1 h-4 w-4">
+                                    <path fill-rule="evenodd"
+                                        d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </p>
+                            <p class="mt-1 flex items-center text-sm text-slate-700">
+
+
+                                {{ \Carbon\Carbon::parse($startTime)->format('H:i') }} -
+                                {{ \Carbon\Carbon::parse($endTime)->format('H:i') }}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    class="ml-1 h-4 w-4">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

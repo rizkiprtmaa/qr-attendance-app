@@ -562,11 +562,6 @@ new class extends Component {
                 $currentDay->addDay();
             }
 
-            // Inisialisasi semua hari kerja sebagai tidak hadir
-            foreach ($workingDays as $day) {
-                $studentData['attendance'][$day] = 'tidak_hadir';
-            }
-
             // Update status kehadiran berdasarkan data yang ada
             foreach ($studentAttendances as $attendance) {
                 $date = $attendance->attendance_date;
@@ -676,7 +671,7 @@ new class extends Component {
 }; ?>
 
 
-<div>
+<div class="mt-12 md:mt-0">
     <!-- Toast Notification Component -->
     <div x-data="{
         toastMessage: '',
@@ -1162,9 +1157,10 @@ new class extends Component {
 
                 </div>
 
+                {{-- Mobile View --}}
                 <div class="mt-5 flex flex-col md:hidden">
                     <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow">
-                        @foreach ($pendingPermissions as $permission)
+                        @forelse ($pendingPermissions as $permission)
                             <div class="p-4 sm:px-6">
                                 <div class="flex items-center justify-between">
                                     <div class="flex flex-row items-center">
@@ -1207,16 +1203,23 @@ new class extends Component {
                                         </span>
                                     </div>
                                     <div class="flex flex-row gap-3">
-
                                         <button class="pe-2 text-xs font-medium text-blue-600 hover:text-blue-900"
                                             wire:click="viewPermissionDetail({{ $permission->id }})">Detail</button>
-
                                     </div>
                                 </div>
                             </div>
-                        @endforeach
-
-
+                        @empty
+                            <div class="p-6">
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-300"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-500">Tidak ada pengajuan izin yang ditemukan</p>
+                                </div>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             @endif
@@ -1267,7 +1270,7 @@ new class extends Component {
                     <!-- Cards for each student -->
                     @foreach ($studentAttendance as $record)
                         <div x-data="{ showSummary: false }"
-                            class="mb-3 overflow-hidden rounded-md bg-white shadow-sm transition hover:shadow-lg">
+                            class="mb-1 overflow-hidden rounded-md bg-white shadow-sm transition hover:shadow-lg">
                             <!-- Student name header -->
                             <div class="px-4 py-3">
                                 <div class="flex items-center justify-between">
@@ -1279,10 +1282,7 @@ new class extends Component {
                                             <span x-show="!showSummary">Ringkasan</span>
                                             <span x-show="showSummary">Tutup</span>
                                         </button>
-                                        <button
-                                            class="rounded-md bg-blue-50 px-2.5 py-1 font-inter text-xs font-medium text-blue-600">
-                                            Detail
-                                        </button>
+
                                     </div>
                                 </div>
                             </div>
@@ -1293,7 +1293,7 @@ new class extends Component {
                                 <!-- Hadir -->
                                 <div class="border-b border-r border-gray-100 px-4 py-3">
                                     <div class="flex flex-col items-center">
-                                        <span class="font-inter text-xs text-gray-500">Hadir</span>
+                                        <span class="font-inter text-xs text-gray-500">Tepat Waktu</span>
                                         <span
                                             class="mt-1 font-inter text-base font-semibold text-green-600">{{ $record['summary']['present'] }}</span>
                                     </div>
@@ -1421,7 +1421,7 @@ new class extends Component {
                                     </th>
                                     <th scope="col"
                                         class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                                        Hadir
+                                        Tepat Waktu
                                     </th>
                                     <th scope="col"
                                         class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -1439,10 +1439,7 @@ new class extends Component {
                                         class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                                         Tidak Hadir
                                     </th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                                        Detail
-                                    </th>
+
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
@@ -1482,12 +1479,7 @@ new class extends Component {
                                                 {{ $record['summary']['absent'] }}
                                             </span>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-center">
-                                            <button
-                                                class="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200">
-                                                Detail
-                                            </button>
-                                        </td>
+
                                     </tr>
                                 @endforeach
 

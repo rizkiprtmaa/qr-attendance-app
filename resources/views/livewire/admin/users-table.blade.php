@@ -212,7 +212,12 @@ new class extends Component {
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            @if ($user->roles->contains('name', 'student'))
+                            @if ($user->roles->contains('name', 'teacher') && $user->teacher->is_karyawan)
+                                <span
+                                    class="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-800">
+                                    Karyawan
+                                </span>
+                            @elseif ($user->roles->contains('name', 'student'))
                                 <span
                                     class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
                                     Siswa
@@ -297,22 +302,29 @@ new class extends Component {
                             <p class="mt-1 text-sm text-gray-600">{{ $user->email }}</p>
                         </div>
                         <div>
-                            @if ($user->roles->contains('name', 'student'))
-                                <span
-                                    class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
-                                    Siswa
-                                </span>
-                            @elseif ($user->roles->contains('name', 'teacher'))
-                                <span
-                                    class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-800">
-                                    Guru
-                                </span>
-                            @else
-                                <span
-                                    class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800">
-                                    {{ $user->roles->first()->name ?? 'Tidak ada peran' }}
-                                </span>
-                            @endif
+                            <td class="px-6 py-4">
+                                @if ($user->roles->contains('name', 'teacher') && $user->teacher->is_karyawan)
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-800">
+                                        Karyawan
+                                    </span>
+                                @elseif ($user->roles->contains('name', 'student'))
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
+                                        Siswa
+                                    </span>
+                                @elseif ($user->roles->contains('name', 'teacher'))
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-800">
+                                        Guru
+                                    </span>
+                                @else
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800">
+                                        {{ $user->roles->first()->name ?? 'Tidak ada peran' }}
+                                    </span>
+                                @endif
+                            </td>
                         </div>
                     </div>
 

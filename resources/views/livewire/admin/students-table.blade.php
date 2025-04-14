@@ -154,16 +154,11 @@ new class extends Component {
             'late' => 0,
             'permission' => 0,
             'sick' => 0,
-            'absent' => count($workingDays), // Awalnya semua dianggap tidak hadir
+            'absent' => 0, // Awalnya semua dianggap tidak hadir
         ];
 
         // Buat array untuk menyimpan kehadiran per tanggal
         $attendanceByDate = [];
-
-        // Isi semua tanggal dengan status 'tidak_hadir'
-        foreach ($workingDays as $day) {
-            $attendanceByDate[$day] = 'tidak_hadir';
-        }
 
         // Update status kehadiran berdasarkan data yang ada
         foreach ($attendanceData as $attendance) {
@@ -416,11 +411,10 @@ new class extends Component {
                             </span>
                         </td>
                         <td class="px-6 py-4 text-center">
-                            <button
-                                @click="showDetailModal = true; currentStudentId = {{ $student->id }}; currentStudentName = '{{ $student->user->name }}'"
+                            <a href="{{ route('user.detail', $student->user) }}" wire:navigate
                                 class="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200">
                                 Detail
-                            </button>
+                            </a>
                         </td>
                     </tr>
                 @empty
@@ -496,11 +490,10 @@ new class extends Component {
                     </div>
 
                     <div class="mt-4 flex justify-end">
-                        <button
-                            @click="showDetailModal = true; currentStudentId = {{ $student->id }}; currentStudentName = '{{ $student->user->name }}'"
+                        <a href="{{ route('user.detail', $student->user->id) }}"
                             class="rounded-md bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200">
                             Detail Kehadiran
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>

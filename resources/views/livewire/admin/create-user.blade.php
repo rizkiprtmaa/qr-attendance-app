@@ -29,6 +29,7 @@ new class extends Component {
     // Teacher attributes (if needed)
     public $nuptk;
     public $teacher_phone;
+    public $is_karyawan = 0;
 
     public function mount()
     {
@@ -77,6 +78,7 @@ new class extends Component {
             return array_merge($baseRules, [
                 'nuptk' => 'required|string|max:50|unique:teachers',
                 'teacher_phone' => 'required|string|max:15',
+                'is_karyawan' => 'boolean',
             ]);
         }
     }
@@ -114,6 +116,7 @@ new class extends Component {
                     'user_id' => $user->id,
                     'nuptk' => $this->nuptk,
                     'phone_number' => $this->teacher_phone,
+                    'is_karyawan' => $this->is_karyawan,
                 ]);
             }
 
@@ -131,7 +134,7 @@ new class extends Component {
 
 <div x-data="{
     isStudent: $wire.role === 'student'
-}" x-init="$watch('$wire.role', value => isStudent = value === 'student')">
+}" x-init="$watch('$wire.role', value => isStudent = value === 'student')" class="mt-12 md:mt-0">
     <form wire:submit="createUser" class="mx-auto max-w-3xl">
         <!-- Alert Messages -->
         @if (session()->has('error'))
@@ -329,6 +332,20 @@ new class extends Component {
                                 <span class="mt-1 text-sm text-red-600">{{ $message }}</span>
                             @enderror
                         </div>
+                        <div>
+                            <label for="is_karyawan" class="block text-sm font-medium text-gray-700">Status
+                                Karyawan</label>
+                            <div class="mt-1">
+                                <select id="is_karyawan" wire:model="is_karyawan"
+                                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    <option value="0">Guru</option>
+                                    <option value="1">Karyawan</option>
+                                </select>
+                            </div>
+                            @error('is_karyawan')
+                                <span class="mt-1 text-sm text-red-600">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
                 </div>
             </div>
@@ -342,13 +359,24 @@ new class extends Component {
             </a>
 
             <button type="submit"
-                class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="mr-1.5 h-4 w-4">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                wire:loading.attr="disabled" wire:loading.class="opacity-50 cursor-not-allowed">
+                <div wire:loading.remove>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="mr-1.5 h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <svg wire:loading class="mr-1.5 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                        stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
                 </svg>
-                Buat Pengguna
+                <span>Buat Pengguna</span>
             </button>
         </div>
     </form>

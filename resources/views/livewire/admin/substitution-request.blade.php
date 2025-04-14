@@ -151,7 +151,7 @@ new class extends Component {
 
 ?>
 
-<div>
+<div class="mt-12 md:mt-0">
     <div x-data="{
         toastMessage: '',
         toastType: '',
@@ -246,7 +246,7 @@ new class extends Component {
         </div>
 
         <!-- Bagian Stats Cards -->
-        <div class="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mb-6 grid grid-cols-2 gap-5 lg:grid-cols-4">
             <!-- Pending Stats Card -->
             <div class="overflow-hidden rounded-lg bg-white shadow">
                 <div class="p-5">
@@ -784,7 +784,7 @@ new class extends Component {
     }" x-show="show" x-cloak
         @open-detail.window="show = true; request = $event.detail.request" class="fixed inset-0 z-50 overflow-y-auto"
         aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:p-0">
+        <div class="flex min-h-screen items-center justify-center px-4">
             <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
@@ -797,7 +797,7 @@ new class extends Component {
                 x-transition:leave="ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                class="transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:w-full sm:max-w-lg"
+                class="w-full max-w-lg transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
                 @click.outside="show = false">
                 <div class="bg-white px-4 py-5 sm:px-6">
                     <div class="flex items-center">
@@ -830,7 +830,7 @@ new class extends Component {
                             <div class="overflow-hidden bg-white shadow sm:rounded-lg">
                                 <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
                                     <dl class="sm:divide-y sm:divide-gray-200">
-                                        <div class="py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-3">
+                                        <div class="grid grid-cols-3 py-2 sm:gap-4 sm:px-6 sm:py-3">
                                             <dt class="text-sm font-medium text-gray-500">Status</dt>
                                             <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
                                                 <span x-show="request.status === 'pending'"

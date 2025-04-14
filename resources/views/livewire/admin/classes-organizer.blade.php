@@ -311,7 +311,7 @@ new class extends Component {
             this.showNotification = false;
         }, 3000);
     }
-}" @notify.window="showNotify($event.detail.type, $event.detail.message)">
+}" @notify.window="showNotify($event.detail.type, $event.detail.message)" class="mt-12 md:mt-0">
 
     <!-- Notification Toast -->
     <div x-show="showNotification" x-transition:enter="transition ease-out duration-300"

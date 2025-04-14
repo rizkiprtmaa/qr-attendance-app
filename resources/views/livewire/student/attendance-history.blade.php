@@ -231,7 +231,7 @@ new class extends Component {
 <div>
     <div class="mb-4 mt-10 rounded-lg bg-white p-4 shadow-sm">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 class="font-inter text-xl font-medium text-gray-800">Riwayat Kehadiran</h2>
+            <h2 class="hidden text-center font-inter text-lg font-medium text-gray-800 md:block">Riwayat Kehadiran</h2>
 
             <!-- Filter dan Pencarian -->
             <div class="flex flex-col gap-2 sm:flex-row">
@@ -298,13 +298,7 @@ new class extends Component {
             </div>
         @else
             @foreach ($attendances as $attendance)
-                <a href="{{ $attendance['type'] === 'qr'
-                    ? route('student.attendance.detail.qr', ['date' => $attendance['raw_date']])
-                    : route('student.attendance.detail.subject', [
-                        'date' => $attendance['raw_date'],
-                        'id' => $attendance['session_id'] ?? 0,
-                    ]) }}"
-                    class="block transition duration-150 hover:bg-gray-50">
+                <a class="block transition duration-150 hover:bg-gray-50">
                     <div class="rounded-lg bg-white p-4 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -408,3 +402,4 @@ new class extends Component {
             </div>
         </div>
     </div>
+</div>

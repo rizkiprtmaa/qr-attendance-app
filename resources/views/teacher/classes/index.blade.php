@@ -1,4 +1,5 @@
 <x-app-layout>
+
     <x-slot name="header">
         <div class="flex flex-row items-center justify-between">
             <div class="flex flex-col gap-2">
@@ -24,11 +25,34 @@
     </x-slot>
 
 
-
-    <div class="py-6">
-        <div class="mx-auto max-w-7xl">
-            <livewire:teacher.create-attendances-class />
-
+    @if (auth()->user()->teacher->is_karyawan)
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl">
+                <div class="overflow-hidden rounded-lg bg-white shadow">
+                    <div class="flex items-center gap-4 px-4 py-5 sm:p-6">
+                        <div class="flex-shrink-0">
+                            <svg class="size-8 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Akses Terbatas</h3>
+                            <p class="mt-1 text-sm text-gray-500">Maaf, fitur ini hanya tersedia untuk Guru/Pengajar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    @else
+        <div class="py-6">
+            <div class="mx-auto max-w-7xl">
+                <livewire:teacher.create-attendances-class />
+
+            </div>
+        </div>
+    @endif
 </x-app-layout>

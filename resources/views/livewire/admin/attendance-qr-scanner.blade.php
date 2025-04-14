@@ -278,7 +278,7 @@ new class extends Component {
 
 ?>
 
-<div x-data="qrScanner()" x-init="initializeLibrary()" class="flex min-h-[80vh] w-full flex-col items-center justify-center">
+<div x-data="qrScanner()" x-init="initializeLibrary()" class="flex min-h-[80vh] w-full flex-col items-center">
     <!-- Tab datang/pulang -->
     <div class="mt-5 flex w-full justify-center">
         <nav

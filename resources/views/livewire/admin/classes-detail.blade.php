@@ -46,6 +46,13 @@ new class extends Component {
     public $currentMonth;
     public $currentYear;
     public $attendanceSearch = '';
+
+    public function updatedAttendanceSearch()
+    {
+        if ($this->activeTab === 'attendance') {
+            $this->loadCurrentMonthAttendance();
+        }
+    }
     public $monthNames = [
         1 => 'Januari',
         2 => 'Februari',
@@ -315,11 +322,6 @@ new class extends Component {
                 $currentDay->addDay();
             }
 
-            // Inisialisasi semua hari kerja sebagai tidak hadir
-            foreach ($workingDays as $day) {
-                $studentData['attendance'][$day] = 'tidak_hadir';
-            }
-
             // Update status kehadiran berdasarkan data yang ada
             foreach ($studentAttendances as $attendance) {
                 $date = $attendance->attendance_date;
@@ -494,7 +496,7 @@ new class extends Component {
                     // Konversi status ke simbol
                     $symbol = '';
                     if ($status === 'hadir') {
-                        $symbol = '√';
+                        $symbol = 'H'; // HTML entity for checkmark
                     } elseif ($status === 'terlambat') {
                         $symbol = 'T';
                     } elseif ($status === 'izin') {
@@ -604,8 +606,7 @@ new class extends Component {
 }; ?>
 
 
-<div>
-    <!-- Toast Notification Component -->
+<div class="mt-12 md:mt-0" <!-- Toast Notification Component -->
     <div x-data="{
         toastMessage: '',
         toastType: '',
@@ -674,9 +675,9 @@ new class extends Component {
                     Tahun Ajaran {{ $class->school_year->name ?? 'Tidak ada tahun ajaran' }}
                 </p>
 
-                <div class="mt-2 flex flex-wrap gap-2">
-                    <p class="flex flex-row items-center gap-2 font-inter text-sm text-gray-600">
-                        <svg height="512" class="size-5" viewBox="0 0 25 25" width="512"
+                <div class="mt-2 flex flex-wrap gap-3">
+                    <p class="flex flex-row items-center gap-2 font-inter text-xs text-gray-600 md:text-sm">
+                        <svg height="512" class="size-4 md:size-5" viewBox="0 0 25 25" width="512"
                             xmlns="http://www.w3.org/2000/svg">
                             <g id="Teacher" fill="#2b3344">
                                 <path
@@ -699,9 +700,9 @@ new class extends Component {
                         {{ $class->teacher->user->name }}
                     </p>
 
-                    <p class="flex flex-row items-center gap-2 font-inter text-sm text-gray-600">
+                    <p class="flex flex-row items-center gap-2 font-inter text-xs text-gray-600 md:text-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-5">
+                            stroke="currentColor" class="size-4 md:size-5">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
                         </svg>
@@ -710,17 +711,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <div class="mt-4 flex flex-wrap gap-2 sm:mt-0">
-                <button wire:click="downloadAttendanceReport"
-                    class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Laporan Bulan {{ $monthNames[intval($currentMonth)] }}
-                </button>
-            </div>
+
         </div>
     </div>
 

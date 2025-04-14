@@ -3,7 +3,9 @@
 use App\Models\User;
 use Livewire\Volt\Volt;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserCardController;
 use App\Http\Controllers\ClassReportController;
+use App\Http\Controllers\AttendancePdfController;
 
 
 Route::view('/', 'welcome');
@@ -137,6 +139,11 @@ Route::get('/student/attendance/detail/subject/{date}/{id}', function ($date, $i
         'id' => $id
     ]);
 })->name('student.attendance.detail.subject');
+
+Route::get('/download-user-card/{user?}', [UserCardController::class, 'download'])
+    ->name('download.user-card')
+    ->middleware(['auth']);
+
 
 
 

@@ -91,10 +91,15 @@ new class extends Component {
 
 <div class="mx-auto mb-20 mt-16 max-w-xl md:mt-4 md:max-w-7xl" x-data="{
     showQrModal: false,
+    showDownloadModal: false,
     openQrModal(qrCodePath, userId) {
         this.currentQrCode = qrCodePath;
         this.currentUserId = userId;
         this.showQrModal = true;
+    },
+    openDownloadModal(userName) {
+        this.showDownloadModal = true;
+        this.currentUserName = userName;
     },
 }" x-cloak>
     <div class="flex flex-col">
@@ -109,7 +114,8 @@ new class extends Component {
                     <div>
                         <h2 class="font-inter text-lg font-semibold">{{ auth()->user()->name }}</h2>
                         <div class="flex flex-col gap-1 font-inter text-xs md:text-sm">
-                            <span>{{ auth()->user()->student->classes->name . ' ' . auth()->user()->student->classes->major->code ?? 'Tidak ada kelas' }}</span>
+                            <span
+                                class="truncate">{{ auth()->user()->student->classes->name . ' ' . auth()->user()->student->classes->major->name ?? 'Tidak ada kelas' }}</span>
                             <span
                                 class="md:tex-sm font-inter text-xs text-gray-600">{{ auth()->user()->student->nisn ?? '000' }}</span>
                         </div>
@@ -136,7 +142,7 @@ new class extends Component {
             </div>
 
             <div class="flex flex-row items-end justify-between">
-                <button wire:click="downloadInfo"
+                <button @click="openDownloadModal('{{ auth()->user()->name }}')"
                     class="mt-3 flex w-auto items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="mr-2 h-4 w-4">
@@ -145,7 +151,15 @@ new class extends Component {
                     </svg>
                     Unduh Informasi
                 </button>
-                <span class="flex items-center rounded-md bg-green-300 px-2 py-1 text-xs text-green-600">Aktif</span>
+
+                <span
+                    class="flex flex-row items-center gap-1 rounded-md bg-green-300 px-2 py-1 text-xs text-green-600"><svg
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                    </svg>Siswa</span>
+
             </div>
         </div>
 
@@ -216,7 +230,8 @@ new class extends Component {
         <div class="mt-6">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-medium">Riwayat Kehadiran</h2>
-                <a class="text-sm font-medium text-blue-600">Lihat detail</a>
+                <a class="text-sm font-medium text-blue-600" href="{{ route('attendance-history') }}"
+                    wire:navigate>Lihat detail</a>
             </div>
 
             <div class="mt-3 space-y-3">
@@ -301,9 +316,10 @@ new class extends Component {
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                             stroke-width="1.5" stroke="currentColor" class="mb-2 h-10 w-10 text-gray-400">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
                         </svg>
-                        <p class="text-sm text-gray-600">Belum ada data kehadiran hari ini</p>
+
+                        <p class="font-inter text-sm text-gray-500">Belum ada data kehadiran hari ini.</p>
                     </div>
                 @endif
             </div>
@@ -359,6 +375,47 @@ new class extends Component {
                     </svg>
                     Download QR
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div x-show="showDownloadModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-5" x-cloak
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="max-h-[90vh] w-full max-w-3xl transform overflow-auto rounded-lg bg-white p-6 shadow-xl transition-all"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-xl font-medium text-gray-900" x-text="`Detail Kartu: ${currentUserName}`"></h2>
+                <button @click="showDownloadModal = false" class="rounded-md p-1 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-5 text-gray-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+
+            <div class="rounded-lg border border-gray-200">
+                <!-- Detail konten akan di-load secara dinamis -->
+                <p class="p-4 text-center text-gray-500">
+                    Kartu Pengguna belum tersedia pada tahap percobaan.
+                </p>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button @click="showDownloadModal = false"
+                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Tutup
+                </button>
+
             </div>
         </div>
     </div>

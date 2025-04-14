@@ -36,7 +36,7 @@ new #[Layout('layouts.app')] class extends Component {
     }
 }; ?>
 
-<div>
+<div class="mt-12 md:mt-0">
 
     <div class="flex min-h-[80vh] flex-col items-center justify-center">
         <div class="flex w-1/5 flex-row justify-end">
