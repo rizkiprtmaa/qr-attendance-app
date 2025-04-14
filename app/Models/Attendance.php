@@ -1,10 +1,13 @@
 <?php
 
+
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+
 
 class Attendance extends Model
 {
@@ -16,6 +19,7 @@ class Attendance extends Model
         'check_in_time',
         'check_out_time'
     ];
+
 
     public function user()
     {

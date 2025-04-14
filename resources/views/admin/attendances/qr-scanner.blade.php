@@ -44,7 +44,7 @@
 </head>
 
 <body class="font-inter antialiased">
-    <div class="flex min-h-screen items-center justify-center bg-gray-100">
+    <div class="flex min-h-screen bg-gray-100">
 
         <livewire:admin.attendance-qr-scanner />
 

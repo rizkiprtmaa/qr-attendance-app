@@ -1,15 +1,15 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-inter text-xl font-medium leading-tight text-gray-800">
+            <h2 class="font-inter text-3xl font-semibold leading-tight text-gray-800">
                 {{ __('Settings') }}
             </h2>
 
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+    <div class="py-6">
+        <div class="mx-auto max-w-7xl">
             <livewire:admin.school-years />
 
         </div>
