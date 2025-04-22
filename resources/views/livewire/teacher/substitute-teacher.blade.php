@@ -32,6 +32,9 @@ new class extends Component {
     // Modals
     public $showRequestModal = false;
 
+    // Tambahkan property untuk data yang dibutuhkan di modal
+    public $subjectClassDetails = null;
+
     public function mount()
     {
         $this->startDate = now()->timezone('Asia/Jakarta')->format('Y-m-d');
@@ -39,8 +42,16 @@ new class extends Component {
 
     public function showRequestForm($userId, $subjectClassId)
     {
+        // Simpan ID tanpa perlu mengambil data tambahan
         $this->selectedUserId = $userId;
         $this->selectedSubjectClassId = $subjectClassId;
+
+        // Reset nilai form
+        $this->startDate = now()->timezone('Asia/Jakarta')->format('Y-m-d');
+        $this->endDate = null;
+        $this->reason = '';
+
+        // Tampilkan modal
         $this->showRequestModal = true;
     }
 
@@ -63,6 +74,7 @@ new class extends Component {
         }
 
         try {
+            // Langsung set status 'approved' (tidak perlu approval admin)
             SubstitutionRequest::create([
                 'user_id' => $this->selectedUserId,
                 'substitute_teacher_id' => $currentTeacher,
@@ -70,12 +82,12 @@ new class extends Component {
                 'start_date' => $this->startDate,
                 'end_date' => $this->endDate,
                 'reason' => $this->reason,
-                'status' => 'pending',
+                'status' => 'approved', // Langsung disetujui
             ]);
 
             $this->reset(['selectedUserId', 'selectedSubjectClassId', 'startDate', 'endDate', 'reason']);
             $this->showRequestModal = false;
-            $this->dispatch('show-toast', type: 'success', message: 'Permintaan penggantian berhasil diajukan');
+            $this->dispatch('show-toast', type: 'success', message: 'Permintaan penggantian berhasil dibuat dan langsung disetujui');
         } catch (\Exception $e) {
             $this->dispatch('show-toast', type: 'error', message: 'Gagal mengajukan permintaan: ' . $e->getMessage());
         }
@@ -83,7 +95,11 @@ new class extends Component {
 
     public function getAvailableClasses()
     {
+        $currentUserId = auth()->id();
+
         return SubjectClass::with(['user', 'classes.major'])
+            // Jangan tampilkan kelas dari guru yang sedang login
+            ->where('user_id', '!=', $currentUserId)
             ->when($this->searchTeacher, function ($query) {
                 return $query->whereHas('user', function ($q) {
                     $q->where('name', 'like', '%' . $this->searchTeacher . '%');
@@ -307,7 +323,7 @@ new class extends Component {
                 </div>
             </div>
 
-            <!-- Panel Permintaan Saya -->
+            <!-- Panel Permintaan Saya - tampilan status yang telah diubah -->
             <div x-show="activeTab === 'requests'">
                 <!-- Tampilan Tabel untuk MD ke atas -->
                 <div class="hidden md:block">
@@ -325,9 +341,6 @@ new class extends Component {
                                     <th scope="col"
                                         class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                         Tanggal</th>
-                                    <th scope="col"
-                                        class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                        Status</th>
                                     <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
                                         <span class="sr-only">Aksi</span>
                                     </th>
@@ -348,34 +361,17 @@ new class extends Component {
                                                 - {{ \Carbon\Carbon::parse($request->end_date)->format('d M Y') }}
                                             @endif
                                         </td>
-                                        <td class="whitespace-nowrap px-3 py-4 text-sm">
-                                            @if ($request->status === 'pending')
-                                                <span
-                                                    class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Menunggu</span>
-                                            @elseif($request->status === 'approved')
-                                                <span
-                                                    class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">Disetujui</span>
-                                            @elseif($request->status === 'rejected')
-                                                <span
-                                                    class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">Ditolak</span>
-                                            @else
-                                                <span
-                                                    class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Selesai</span>
-                                            @endif
-                                        </td>
                                         <td
                                             class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                            @if ($request->status === 'approved')
-                                                <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
-                                                    class="text-blue-600 hover:text-blue-900">
-                                                    Kelola Kelas
-                                                </a>
-                                            @endif
+                                            <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
+                                                class="text-blue-600 hover:text-blue-900">
+                                                Kelola Kelas
+                                            </a>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="py-6 text-center text-sm text-gray-500">
+                                        <td colspan="4" class="py-6 text-center text-sm text-gray-500">
                                             Anda belum mengajukan permintaan penggantian
                                         </td>
                                     </tr>
@@ -400,21 +396,6 @@ new class extends Component {
                                         </h3>
                                         <p class="text-sm text-gray-500">{{ $request->user->name }}</p>
                                     </div>
-                                    <div>
-                                        @if ($request->status === 'pending')
-                                            <span
-                                                class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Menunggu</span>
-                                        @elseif($request->status === 'approved')
-                                            <span
-                                                class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">Disetujui</span>
-                                        @elseif($request->status === 'rejected')
-                                            <span
-                                                class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">Ditolak</span>
-                                        @else
-                                            <span
-                                                class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Selesai</span>
-                                        @endif
-                                    </div>
                                 </div>
                                 <div class="mt-3">
                                     <div class="mb-2 flex items-center">
@@ -433,14 +414,12 @@ new class extends Component {
                                     </div>
                                 </div>
                             </div>
-                            @if ($request->status === 'approved')
-                                <div class="border-t border-gray-200 bg-gray-50 px-4 py-3 text-right">
-                                    <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
-                                        class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                        Kelola Kelas
-                                    </a>
-                                </div>
-                            @endif
+                            <div class="border-t border-gray-200 bg-gray-50 px-4 py-3 text-right">
+                                <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    Kelola Kelas
+                                </a>
+                            </div>
                         </div>
                     @empty
                         <div class="rounded-lg bg-white p-6 text-center shadow">
@@ -468,15 +447,15 @@ new class extends Component {
     <div x-data="{ show: @entangle('showRequestModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 overflow-y-auto"
         aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:p-0">
-            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+            <div x-show="show" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150"
                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
 
-            <div x-show="show" x-transition:enter="ease-out duration-300"
+            <div x-show="show" x-transition:enter="ease-out duration-200"
                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave="ease-in duration-200"
+                x-transition:leave="ease-in duration-150"
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 class="transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:w-full sm:max-w-lg">
@@ -516,7 +495,7 @@ new class extends Component {
                             <div>
                                 <label for="startDate" class="block text-sm font-medium text-gray-700">Tanggal
                                     Mulai</label>
-                                <input type="date" wire:model="startDate" id="startDate"
+                                <input type="date" wire:model.defer="startDate" id="startDate"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('startDate')
                                     <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
@@ -527,7 +506,7 @@ new class extends Component {
                             <div>
                                 <label for="endDate" class="block text-sm font-medium text-gray-700">Tanggal Selesai
                                     (Opsional)</label>
-                                <input type="date" wire:model="endDate" id="endDate"
+                                <input type="date" wire:model.defer="endDate" id="endDate"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('endDate')
                                     <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
@@ -539,7 +518,7 @@ new class extends Component {
                             <div>
                                 <label for="reason" class="block text-sm font-medium text-gray-700">Alasan
                                     Penggantian</label>
-                                <textarea wire:model="reason" id="reason" rows="3"
+                                <textarea wire:model.defer="reason" id="reason" rows="3"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                     placeholder="Jelaskan alasan Anda ingin menggantikan kelas ini"></textarea>
                                 @error('reason')

@@ -6,6 +6,7 @@ use App\Models\SubjectClassAttendance;
 use App\Models\Student;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Attendance;
 
 new #[Layout('layouts.app')] class extends Component {
     public $session;
@@ -75,17 +76,41 @@ new #[Layout('layouts.app')] class extends Component {
     {
         try {
             $attendance = SubjectClassAttendance::findOrFail($attendanceId);
-            $attendance->update([
-                'status' => $status,
-                'check_in_time' => $status === 'hadir' ? now()->timezone('asia/jakarta') : $attendance->check_in_time,
-            ]);
+            $student = $attendance->student;
+            $sessionDate = $this->session->class_date->format('Y-m-d');
+
+            // Cek apakah siswa sudah absen gerbang/hadir hari ini
+            $hasAttendedSchool = Attendance::isStudentPresentToday($student->user_id, $sessionDate);
+
+            // Jika tidak hadir di sekolah tapi mencoba menandai hadir di kelas
+            if (!$hasAttendedSchool && $status === 'hadir') {
+                $this->dispatch('show-toast', [
+                    'type' => 'error',
+                    'message' => 'Siswa belum melakukan absensi gerbang, tidak dapat ditandai hadir di kelas',
+                ]);
+                return;
+            }
+
+            $attendance->status = $status;
+
+            // Update check-in time jika status hadir
+            if ($status === 'hadir' && $attendance->check_in_time === null) {
+                $attendance->check_in_time = now();
+            }
+
+            // Clear check-in time jika status bukan hadir
+            if ($status !== 'hadir') {
+                $attendance->check_in_time = null;
+            }
+
+            $attendance->save();
 
             // Reload attendances after update
             $this->loadAttendances();
 
-            session()->flash('success', 'Status presensi berhasil diperbarui');
+            $this->dispatch('show-toast', ['type' => 'success', 'message' => 'Status presensi berhasil diperbarui']);
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal memperbarui status presensi: ' . $e->getMessage());
+            $this->dispatch('show-toast', ['type' => 'error', 'message' => 'Gagal memperbarui status presensi: ' . $e->getMessage()]);
         }
     }
 
@@ -93,17 +118,75 @@ new #[Layout('layouts.app')] class extends Component {
     public function bulkUpdateStatus($status)
     {
         try {
-            SubjectClassAttendance::where('subject_class_session_id', $this->sessionId)->update([
-                'status' => $status,
-                'check_in_time' => $status === 'hadir' ? now()->timezone('asia/jakarta') : null,
-            ]);
+            // Get IDs of currently filtered/visible attendances
+            $attendanceIds = $this->attendances->pluck('id')->toArray();
 
-            // Reload attendances after bulk update
-            $this->loadAttendances();
+            if (empty($attendanceIds)) {
+                $this->dispatch('show-toast', [
+                    'type' => 'warning',
+                    'message' => 'Tidak ada siswa yang dipilih untuk diperbarui',
+                ]);
+                return;
+            }
 
-            session()->flash('success', 'Status presensi semua siswa berhasil diperbarui');
+            if ($status === 'hadir') {
+                // Filter hanya siswa yang sudah absen gerbang
+                $allAttendances = $this->session->attendances()->with('student.user')->get();
+                $validAttendances = $allAttendances->filter(function ($attendance) {
+                    $sessionDate = $this->session->class_date->format('Y-m-d');
+                    $hasAttendedSchool = Attendance::isStudentPresentToday($attendance->student->user_id, $sessionDate);
+
+                    return $hasAttendedSchool;
+                });
+
+                $validAttendanceIds = $validAttendances->pluck('id')->toArray();
+
+                if (count($validAttendanceIds) !== count($attendanceIds)) {
+                    $skippedCount = count($attendanceIds) - count($validAttendanceIds);
+                    $this->dispatch('show-toast', [
+                        'type' => 'warning',
+                        'message' => "$skippedCount siswa dilewati karena belum absen gerbang",
+                    ]);
+                }
+
+                // Jika tidak ada siswa yang valid sama sekali
+                if (empty($validAttendanceIds) && $status === 'hadir') {
+                    $this->dispatch('show-toast', [
+                        'type' => 'error',
+                        'message' => 'Tidak ada siswa yang bisa ditandai hadir karena belum ada yang absen gerbang',
+                    ]);
+                    return;
+                }
+
+                // Hanya update yang valid
+                $attendanceIds = $validAttendanceIds;
+            }
+
+            // Proses update untuk semua ID yang valid
+            if (!empty($attendanceIds)) {
+                SubjectClassAttendance::whereIn('id', $attendanceIds)->update([
+                    'status' => $status,
+                    'check_in_time' => $status === 'hadir' ? now() : null,
+                ]);
+
+                // Reload data
+                $this->loadAttendances();
+
+                $this->dispatch('show-toast', [
+                    'type' => 'success',
+                    'message' => 'Status kehadiran siswa berhasil diperbarui (' . count($attendanceIds) . ' siswa)',
+                ]);
+            } else {
+                $this->dispatch('show-toast', [
+                    'type' => 'warning',
+                    'message' => 'Tidak ada siswa yang diperbarui',
+                ]);
+            }
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal memperbarui status presensi: ' . $e->getMessage());
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Gagal memperbarui status kehadiran: ' . $e->getMessage(),
+            ]);
         }
     }
 
@@ -135,48 +218,52 @@ new #[Layout('layouts.app')] class extends Component {
 
 
 <div>
-    {{-- <div class="mt-10 w-full md:mt-0">
-        <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-            <div class="flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="font-inter text-xl font-medium leading-tight text-gray-800">
-                            {{ $subjectTitle }}
-                        </h2>
-                        <p class="font-inter text-sm text-gray-600">Kelola absensi siswa pada pertemuan ini</p>
-                    </div>
-                    <a href="{{ route('subject.detail', $subjectClassId) }}" wire:navigate
-                        class="inline-flex items-center rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="mr-2 h-4 w-4">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                        </svg>
-                        Kembali
-                    </a>
+
+
+    <div x-data="{
+        toastMessage: '',
+        toastType: '',
+        showToast: false
+    }"
+        x-on:show-toast.window="
+            const data = $event.detail[0] || $event.detail;
+            toastMessage = data.message;
+            toastType = data.type;
+            showToast = true;
+            setTimeout(() => showToast = false, 4000)
+         ">
+
+        <div x-cloak x-show="showToast" x-transition.opacity
+            :class="toastType === 'success' ? 'bg-white text-gray-500' : 'bg-red-100 text-red-700'"
+            class="fixed right-5 top-5 z-10 mb-4 mt-12 flex w-full max-w-xs items-center rounded-lg p-4 shadow md:bottom-5 md:mt-0"
+            role="alert">
+
+            <template x-if="toastType === 'success'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
                 </div>
-            </div>
-        </div>
-    </div> --}}
+            </template>
 
-    <!-- Success Message Toast -->
-    @if (session()->has('success'))
-        <div id="toast-success" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)"
-            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg bg-white p-4 text-gray-500 shadow"
-            role="alert">
-            <div
-                class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
-                <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
-                    viewBox="0 0 20 20">
-                    <path
-                        d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-                </svg>
-                <span class="sr-only">Success icon</span>
-            </div>
-            <div class="ml-3 text-sm font-normal">{{ session('success') }}</div>
-            <button type="button" @click="show = false"
-                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900">
-                <span class="sr-only">Close</span>
+            <template x-if="toastType === 'error'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <div class="ml-3 text-sm font-normal" x-text="toastMessage"></div>
+
+            <button type="button" @click="showToast = false"
+                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300">
                 <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                     viewBox="0 0 14 14">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -184,65 +271,63 @@ new #[Layout('layouts.app')] class extends Component {
                 </svg>
             </button>
         </div>
-    @endif
+    </div>
 
-    <!-- Error Message Toast -->
-    @if (session()->has('error'))
-        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
-            class="fixed bottom-5 right-5 z-10 rounded-md border border-red-400 bg-red-100 px-4 py-3 text-red-700"
-            role="alert">
-            {{ session('error') }}
-            <button type="button" @click="show = false"
-                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg p-1.5 text-red-500 hover:bg-red-200">
-                <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
-                    viewBox="0 0 14 14">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                </svg>
-            </button>
-        </div>
-    @endif
+    <div class="mx-auto mt-10 max-w-7xl px-2 py-3 md:mt-0">
+        <!-- Session Info Card - Improved Design -->
+        <div
+            class="mb-6 overflow-hidden rounded-lg bg-gradient-to-r from-blue-200 via-blue-100 to-blue-50 shadow-md transition duration-300 hover:shadow-lg">
+            <div class="px-5 py-4">
+                <!-- Card Header with Title and Icons -->
+                <div class="mb-2 flex items-center justify-between">
+                    <h3 class="flex items-center font-inter text-lg font-semibold text-gray-800">
+                        {{ $subjectTitle }}
+                    </h3>
 
-    <div class="mx-auto mt-10 max-w-7xl px-2 py-3 md:mt-0 md:px-4 lg:px-8">
-        <!-- Session Info Card -->
-        <div class="mb-6 overflow-hidden rounded-lg bg-gradient-to-r from-blue-200 to-blue-100 shadow">
-            <div class="px-4 py-5 sm:px-6">
-                <div class="flex flex-col items-start sm:justify-between">
-                    <div>
-                        <h3 class="font-inter text-lg font-medium leading-6 text-gray-900">{{ $subjectTitle }}</h3>
+                </div>
 
-                    </div>
-                    <div class="flex w-full flex-row items-center justify-between">
-                        <div>
-                            <p class="mt-1 max-w-2xl truncate font-inter text-sm text-slate-700">{{ $className }}</p>
-                            <p class="mt-1 max-w-2xl truncate font-inter text-sm text-slate-700">{{ $studentClassName }}
-                                -
-                                {{ $majorName }}</p>
+                <!-- Subject and Class Information Grid -->
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <!-- Left Column: Class Information -->
+                    <div class="space-y-1">
+                        <div class="flex items-center text-sm font-medium text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-2 h-4 w-4 text-blue-600">
+                                <path
+                                    d="M10.362 1.093a.75.75 0 00-.724 0L2.523 5.018 10 9.143l7.477-4.125-7.115-3.925zM18 6.443l-7.25 4v8.25l6.862-3.786A.75.75 0 0018 14.25V6.443zm-8.75 12.25v-8.25l-7.25-4v7.807a.75.75 0 00.388.657l6.862 3.786z" />
+                            </svg>
+                            {{ $className }}
                         </div>
-                        <div class="mt-3 flex flex-col items-end sm:mt-0">
-                            <p class="flex items-center text-sm text-slate-700">
+                        <div class="flex items-center text-sm text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-2 h-4 w-4 text-blue-600">
+                                <path
+                                    d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" />
+                            </svg>
+                            {{ $studentClassName }} - {{ $majorName }}
+                        </div>
+                    </div>
 
-
-                                {{ \Carbon\Carbon::parse($classDate)->locale('id')->translatedFormat('l, d F Y') }}
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                    class="ml-1 h-4 w-4">
-                                    <path fill-rule="evenodd"
-                                        d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </p>
-                            <p class="mt-1 flex items-center text-sm text-slate-700">
-
-
-                                {{ \Carbon\Carbon::parse($startTime)->format('H:i') }} -
-                                {{ \Carbon\Carbon::parse($endTime)->format('H:i') }}
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                                    class="ml-1 h-4 w-4">
-                                    <path fill-rule="evenodd"
-                                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </p>
+                    <!-- Right Column: Date and Time -->
+                    <div class="space-y-1 md:text-right">
+                        <div class="flex items-center text-sm font-medium text-gray-700 md:justify-end">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-2 h-4 w-4 text-blue-600">
+                                <path fill-rule="evenodd"
+                                    d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            {{ \Carbon\Carbon::parse($classDate)->locale('id')->translatedFormat('l, d F Y') }}
+                        </div>
+                        <div class="flex items-center text-sm text-gray-700 md:justify-end">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                class="mr-2 h-4 w-4 text-blue-600">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            {{ \Carbon\Carbon::parse($startTime)->format('H:i') }} -
+                            {{ \Carbon\Carbon::parse($endTime)->format('H:i') }}
                         </div>
                     </div>
                 </div>
@@ -297,7 +382,8 @@ new #[Layout('layouts.app')] class extends Component {
                         </svg>
                         Sakit/Izin
                     </dt>
-                    <dd class="mt-2 text-3xl font-semibold text-yellow-600">{{ $stats['sakit'] + $stats['izin'] }}</dd>
+                    <dd class="mt-2 text-3xl font-semibold text-yellow-600">{{ $stats['sakit'] + $stats['izin'] }}
+                    </dd>
                     <p class="mt-1 flex justify-start text-sm text-yellow-600 md:justify-end">
                         {{ number_format((($stats['sakit'] + $stats['izin']) / ($stats['total'] > 0 ? $stats['total'] : 1)) * 100, 0) }}%
                     </p>
@@ -386,11 +472,11 @@ new #[Layout('layouts.app')] class extends Component {
                             <div class="py-1">
                                 <a href="#" wire:click.prevent="bulkUpdateStatus('hadir')"
                                     @click="bulkActionOpen = false"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Semua
                                     Hadir</a>
                                 <a href="#" wire:click.prevent="bulkUpdateStatus('tidak_hadir')"
                                     @click="bulkActionOpen = false"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai Semua Tidak
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Semua Tidak
                                     Hadir</a>
                             </div>
                         </div>
@@ -474,20 +560,17 @@ new #[Layout('layouts.app')] class extends Component {
                                         <div class="py-1">
                                             <a href="#"
                                                 wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'hadir'); open = false"
-                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
-                                                Hadir</a>
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Hadir</a>
                                             <a href="#"
                                                 wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'tidak_hadir'); open = false"
-                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
-                                                Tidak Hadir</a>
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tidak
+                                                Hadir</a>
                                             <a href="#"
                                                 wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'sakit'); open = false"
-                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
-                                                Sakit</a>
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sakit</a>
                                             <a href="#"
                                                 wire:click.prevent="updateStatus({{ $attendance['id'] }}, 'izin'); open = false"
-                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Tandai
-                                                Izin</a>
+                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Izin</a>
                                         </div>
                                     </div>
                                 </div>

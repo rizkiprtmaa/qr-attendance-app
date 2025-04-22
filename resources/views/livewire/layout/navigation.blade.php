@@ -49,6 +49,10 @@ new class extends Component {
                 {{ 'Daftar Kehadiran' }}
             @elseif(request()->routeIs(['teacher.substitute', 'substitute.attendance', 'substitute.class']))
                 {{ 'Kelas Pengganti' }}
+            @elseif(request()->routeIs(['teacher.attendances']))
+                {{ 'Kehadiran Guru' }}
+            @elseif(request()->routeIs(['teacher.live-classes']))
+                {{ 'Kelas Berlangsung' }}
             @else
                 {{ 'SMK Nurussalam' }}
             @endif
@@ -159,16 +163,81 @@ new class extends Component {
                 </x-sidebar-link>
             @endrole
 
-            @role('teacher')
-                <x-sidebar-link :href="route('classes.attendances')" :active="request()->routeIs(['classes.attendances', 'subject.detail', 'session.attendance'])" wire:navigate>
+            @hasrole('teacher')
+                @unlessrole('kepala_sekolah')
+                    <x-sidebar-link :href="route('classes.attendances')" :active="request()->routeIs(['classes.attendances', 'subject.detail', 'session.attendance'])" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
+                        </svg>
+
+
+                        {{ __('Presensi Kelas') }}
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+
+
+
+                        {{ __('Pengajuan Izin') }}
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('class-management')" :active="request()->routeIs('class-management')" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                        </svg>
+
+
+
+
+                        {{ __('Kelola Siswa') }}
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('teacher.substitute')" :active="request()->routeIs(['teacher.substitute', 'substitute.attendance', 'substitute.class'])" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
+                        </svg>
+
+
+
+
+
+                        {{ __('Kelas Pengganti') }}
+                    </x-sidebar-link>
+                @endunlessrole
+            @endhasrole
+
+            @hasrole('kepala_sekolah')
+                <x-sidebar-link :href="route('teacher.attendances')" :active="request()->routeIs('teacher.attendances')" wire:navigate>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="mr-3 h-5 w-5">
                         <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
+                            d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
                     </svg>
 
 
-                    {{ __('Presensi Kelas') }}
+
+                    </svg>
+                    {{ __('Kehadiran Guru') }}
+                </x-sidebar-link>
+                <x-sidebar-link :href="route('teacher.live-classes')" :active="request()->routeIs('teacher.live-classes')" wire:navigate>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="mr-3 h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" />
+                    </svg>
+
+
+
+                    </svg>
+                    {{ __('Live Class') }}
                 </x-sidebar-link>
                 <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -178,35 +247,10 @@ new class extends Component {
                     </svg>
 
 
-
+                    </svg>
                     {{ __('Pengajuan Izin') }}
                 </x-sidebar-link>
-                <x-sidebar-link :href="route('class-management')" :active="request()->routeIs('class-management')" wire:navigate>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="mr-3 h-5 w-5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-                    </svg>
-
-
-
-
-                    {{ __('Kelola Siswa') }}
-                </x-sidebar-link>
-                <x-sidebar-link :href="route('teacher.substitute')" :active="request()->routeIs(['teacher.substitute', 'substitute.attendance', 'substitute.class'])" wire:navigate>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="mr-3 h-5 w-5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
-                    </svg>
-
-
-
-
-
-                    {{ __('Kelas Pengganti') }}
-                </x-sidebar-link>
-            @endrole
+            @endhasrole
 
             @role('student')
                 <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
@@ -386,16 +430,84 @@ new class extends Component {
                         {{ __('Settings') }}
                     </x-sidebar-link>
                 @endrole
-                @role('teacher')
-                    <x-sidebar-link :href="route('classes.attendances')" :active="request()->routeIs(['classes.attendances', 'subject.detail', 'session.attendance'])" wire:navigate>
+                @hasrole('teacher')
+                    @unlessrole('kepala_sekolah')
+                        <x-sidebar-link :href="route('classes.attendances')" :active="request()->routeIs(['classes.attendances', 'subject.detail', 'session.attendance'])" wire:navigate>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="mr-3 h-5 w-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
+                            </svg>
+
+
+                            {{ __('Presensi Kelas') }}
+                        </x-sidebar-link>
+                        <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="mr-3 h-5 w-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            </svg>
+
+
+
+                            {{ __('Pengajuan Izin') }}
+                        </x-sidebar-link>
+                        <x-sidebar-link :href="route('class-management')" :active="request()->routeIs('class-management')" wire:navigate>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="mr-3 h-5 w-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                            </svg>
+
+
+
+
+                            {{ __('Kelola Siswa') }}
+                        </x-sidebar-link>
+                        <x-sidebar-link :href="route('teacher.substitute')" :active="request()->routeIs([
+                            'teacher.substitute',
+                            'substitute.attendance',
+                            'substitute.class',
+                        ])" wire:navigate>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="mr-3 h-5 w-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
+                            </svg>
+
+
+
+
+
+                            {{ __('Kelas Pengganti') }}
+                        </x-sidebar-link>
+                    @endunlessrole
+                @endhasrole
+                @hasrole('kepala_sekolah')
+                    <x-sidebar-link :href="route('teacher.attendances')" :active="request()->routeIs('teacher.attendances')" wire:navigate>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="mr-3 h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
+                                d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
                         </svg>
 
 
-                        {{ __('Presensi Kelas') }}
+
+                        </svg>
+                        {{ __('Kehadiran Guru') }}
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('teacher.live-classes')" :active="request()->routeIs('teacher.live-classes')" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="mr-3 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" />
+                        </svg>
+
+
+
+                        </svg>
+                        {{ __('Live Class') }}
                     </x-sidebar-link>
                     <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -405,35 +517,10 @@ new class extends Component {
                         </svg>
 
 
-
+                        </svg>
                         {{ __('Pengajuan Izin') }}
                     </x-sidebar-link>
-                    <x-sidebar-link :href="route('class-management')" :active="request()->routeIs('class-management')" wire:navigate>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="mr-3 h-5 w-5">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-                        </svg>
-
-
-
-
-                        {{ __('Kelola Siswa') }}
-                    </x-sidebar-link>
-                    <x-sidebar-link :href="route('teacher.substitute')" :active="request()->routeIs(['teacher.substitute', 'substitute.attendance', 'substitute.class'])" wire:navigate>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="mr-3 h-5 w-5">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
-                        </svg>
-
-
-
-
-
-                        {{ __('Kelas Pengganti') }}
-                    </x-sidebar-link>
-                @endrole
+                @endhasrole
                 @role('student')
                     <x-sidebar-link :href="route('permission-submission')" :active="request()->routeIs('permission-submission')" wire:navigate>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -487,10 +574,10 @@ new class extends Component {
         <div class="absolute bottom-0 w-full p-4">
             <div class="px-4"><span class="flex w-full border-b border-dashed border-gray-200/80"
                     style="border-style: dashed"></span></div>
-            <div class="flex items-center px-4 py-3">
+            <div class="flex flex-row items-center px-4 py-3">
                 <img src="{{ auth()->user()->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
                     alt="{{ auth()->user()->name }}" class="mr-3 h-10 w-10 rounded-full object-cover">
-                <div>
+                <div class="truncate">
                     <p class="text-inter text-sm font-medium">{{ auth()->user()->name }}</p>
                     <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
                 </div>

@@ -23,6 +23,7 @@ new class extends Component {
 
     public $listeners = [
         'process-scan' => 'processScan',
+        'process-manual-scan' => 'processManualScan',
         'confirm-attendance' => 'confirmAttendance',
         'cancel-attendance' => 'cancelAttendance',
     ];
@@ -41,7 +42,7 @@ new class extends Component {
     {
         $today = Carbon::now()->timezone('Asia/Jakarta')->toDateString();
 
-        // Mengambil 5 presensi terbaru untuk tipe scan yang sedang aktif
+        // Mengambil 10 presensi terbaru untuk tipe scan yang sedang aktif
         $this->recentAttendances = Attendance::with('user')
             ->where('attendance_date', $today)
             ->where('type', $this->scan_type)
@@ -49,10 +50,13 @@ new class extends Component {
             ->take(10)
             ->get()
             ->map(function ($attendance) {
+                // Tentukan display status berdasarkan role user
+                $displayStatus = Attendance::getDisplayStatus($attendance->status, $attendance->user_id);
+
                 return [
                     'name' => $attendance->user->name,
                     'time' => Carbon::parse($attendance->check_in_time)->format('H:i'),
-                    'status' => $attendance->status,
+                    'status' => $displayStatus, // Gunakan status yang sudah diproses
                     'avatar' => !empty($attendance->user->profile_photo_path) ? asset('storage/' . $attendance->user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($attendance->user->name) . '&color=7F9CF5&background=EBF4FF',
                 ];
             });
@@ -103,6 +107,8 @@ new class extends Component {
     {
         $this->loadRecentAttendances();
         $this->loadTotalAttendance();
+        // Kirim event untuk restart scanner
+        $this->dispatch('restart-scanner');
     }
 
     public function changeScanType($type)
@@ -124,6 +130,82 @@ new class extends Component {
         $this->show_confirmation = false;
     }
 
+    public function processManualScan($token)
+    {
+        // Validasi token
+        $user = User::where('qr_token', $token)->first();
+
+        if (!$user) {
+            // Gunakan sistem toast untuk error
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'QR Code tidak valid',
+            ]);
+            // Kirim event untuk restart scanner
+            $this->dispatch('restart-scanner');
+            return;
+        }
+
+        // Validasi presensi sebelumnya
+        try {
+            $now = Carbon::now()->timezone('Asia/Jakarta');
+            $today = $now->toDateString();
+
+            $existingAttendance = Attendance::where('user_id', $user->id)->where('attendance_date', $today)->where('type', $this->scan_type)->first();
+
+            if ($existingAttendance) {
+                $message = $this->scan_type === 'datang' ? 'Anda sudah melakukan presensi datang hari ini.' : 'Anda sudah melakukan presensi pulang hari ini.';
+
+                $this->dispatch('show-toast', [
+                    'type' => 'error',
+                    'message' => $message,
+                ]);
+                // Kirim event untuk restart scanner
+                $this->dispatch('restart-scanner');
+                return;
+            }
+
+            // Untuk presensi pulang, pastikan sudah presensi datang
+            if ($this->scan_type === 'pulang') {
+                $checkIn = Attendance::where('user_id', $user->id)->where('attendance_date', $today)->where('type', 'datang')->first();
+
+                if (!$checkIn) {
+                    $this->dispatch('show-toast', [
+                        'type' => 'error',
+                        'message' => 'Anda belum melakukan presensi datang hari ini.',
+                    ]);
+                    // Kirim event untuk restart scanner
+                    $this->dispatch('restart-scanner');
+                    return;
+                }
+            }
+
+            // Tentukan status presensi
+            $status = Attendance::determineAttendanceStatus($this->scan_type, $now);
+
+            // Tampilkan konfirmasi
+            $this->scanned_user = $user;
+            $this->confirmAttendance();
+
+            // Persiapkan pesan konfirmasi dengan detail status
+            $statusMessage = match ($status) {
+                'terlambat' => 'Anda terlambat',
+                'pulang_cepat' => 'Anda pulang lebih cepat',
+                default => 'Presensi dalam waktu normal',
+            };
+
+            $this->scan_message = $this->scan_type === 'datang' ? "Konfirmasi presensi datang untuk {$user->name}. Status: {$statusMessage}" : "Konfirmasi presensi pulang untuk {$user->name}. Status: {$statusMessage}";
+
+            $this->scan_status = 'confirmation';
+
+            // Tidak perlu restart scanner di sini karena sedang menunggu konfirmasi
+        } catch (\Exception $e) {
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            ]);
+        }
+    }
     public function processScan($token)
     {
         // Validasi token
@@ -179,7 +261,7 @@ new class extends Component {
 
             // Tampilkan konfirmasi
             $this->scanned_user = $user;
-            $this->show_confirmation = true;
+            $this->confirmAttendance();
 
             // Persiapkan pesan konfirmasi dengan detail status
             $statusMessage = match ($status) {
@@ -278,7 +360,8 @@ new class extends Component {
 
 ?>
 
-<div x-data="qrScanner()" x-init="initializeLibrary()" class="flex min-h-[80vh] w-full flex-col items-center">
+<div x-data="qrScanner()" x-init="initializeLibrary();
+startScanning();" class="flex min-h-[80vh] w-full flex-col items-center">
     <!-- Tab datang/pulang -->
     <div class="mt-5 flex w-full justify-center">
         <nav
@@ -365,16 +448,10 @@ new class extends Component {
                         </h2>
 
                         <!-- Area Scanner -->
-                        <div x-show="!isScanning" class="w-full">
-                            <button @click="startScanning()"
-                                class="w-full rounded-[10px] bg-gradient-to-bl from-cyan-300 to-blue-600 py-3 text-sm font-medium text-white transition hover:bg-blue-700">
-                                Buka Scanner QR
-                            </button>
-                        </div>
+
 
                         <!-- Kontainer Scanner -->
-                        <div x-cloak x-show="isScanning" x-transition
-                            class="relative flex min-h-max w-full max-w-full flex-col gap-5 overflow-hidden">
+                        <div class="relative flex min-h-max w-full max-w-full flex-col gap-5 overflow-hidden">
 
                             <!-- Memperbaiki QR Scanner dengan ukuran responsif -->
                             <div id="reader-container" class="relative mx-auto mb-4 w-full max-w-[550px]">
@@ -397,12 +474,12 @@ new class extends Component {
                             </div>
                         </div>
 
-                        <div x-cloak x-show="isScanning" class="mt-3 flex space-x-4">
-                            <button @click="stopScanning()"
-                                class="flex-1 rounded-[10px] bg-gray-600 py-3 text-sm font-medium text-white transition hover:bg-gray-700">
-                                Tutup Scanner QR
-                            </button>
-                        </div>
+                        <!-- Add this somewhere in your HTML, preferably at the top of your component -->
+                        <input type="text" id="external-scanner-input" class="sr-only" autocomplete="off"
+                            x-model="manualInput"
+                            @keydown.enter.prevent="processExternalScan(manualInput); manualInput = ''" />
+
+
                     </div>
                 </div>
 
@@ -467,8 +544,8 @@ new class extends Component {
                             </div>
                         @else
                             <div class="flex flex-col items-center justify-center py-6">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none"
+                                    ewBox="0 0 24 24" stroke="currentCofill="none"lor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
@@ -571,6 +648,7 @@ new class extends Component {
                 cameras: [],
                 selectedCamera: null,
                 lastSelectedCamera: null,
+                manualInput: '', // Add this for manual/external scanner input
 
                 initializeLibrary() {
                     if (typeof Html5Qrcode === 'undefined') {
@@ -606,6 +684,36 @@ new class extends Component {
                             }
                         }, 500);
                     });
+
+                    document.addEventListener('keydown', (e) => {
+                        // Ignore if it's a modifier key or function key
+                        if (e.altKey || e.ctrlKey || e.metaKey || e.key.length > 1) {
+                            if (e.key === 'Enter' && this.manualInput) {
+                                // Process the complete barcode when Enter is pressed
+                                e.preventDefault();
+                                console.log('External scanner input:', this.manualInput);
+                                this.processExternalScan(this.manualInput);
+                                this.manualInput = ''; // Reset for next scan
+                            }
+                            return;
+                        }
+
+                        // Accumulate printable characters
+                        if (e.key.match(/^[a-zA-Z0-9-_]+$/)) {
+                            this.manualInput += e.key;
+                        }
+                    });
+                },
+
+                // Add this new method to handle external scanner input
+                processExternalScan(scannedText) {
+                    if (scannedText && scannedText.length > 0) {
+                        console.log('Processing external scan:', scannedText);
+                        // Send to Livewire component
+                        Livewire.dispatch('process-manual-scan', {
+                            token: scannedText
+                        });
+                    }
                 },
 
                 loadAvailableCameras() {
@@ -634,6 +742,7 @@ new class extends Component {
                                 // Simpan pilihan awal
                                 this.lastSelectedCamera = this.selectedCamera;
                                 console.log('Selected camera:', this.selectedCamera);
+                                this.startScanning();
                             }
                         })
                         .catch(err => {
@@ -819,4 +928,7 @@ new class extends Component {
             };
         }
     </script>
+
+    <!-- Add this just before the closing </div> of your component -->
+
 </div>

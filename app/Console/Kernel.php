@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // Untuk siswa - presensi datang
         $schedule->command('attendance:mark-student-absent datang')
-            ->dailyAt('08:00')
+            ->dailyAt('09:00')
             ->timezone('Asia/Jakarta');
 
         // Untuk siswa - presensi pulang

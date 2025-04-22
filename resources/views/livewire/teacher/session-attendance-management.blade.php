@@ -5,6 +5,7 @@ use App\Models\SubjectClassSession;
 use App\Models\SubjectClassAttendance;
 use App\Models\SubstitutionRequest;
 use Livewire\Attributes\Layout;
+use App\Models\Attendance;
 
 new #[Layout('layouts.app')] class extends Component {
     public $session;
@@ -49,7 +50,17 @@ new #[Layout('layouts.app')] class extends Component {
             }
         }
 
-        $this->attendances = $query->get();
+        $attendances = $query->get();
+
+        // Tambahkan informasi absen gerbang ke setiap absensi
+        $sessionDate = $this->session->class_date->format('Y-m-d');
+
+        $this->attendances = $attendances->map(function ($attendance) use ($sessionDate) {
+            // Cek apakah siswa sudah absen gerbang/hadir hari ini
+            // Gunakan Attendance model atau custom logic sesuai sistem Anda
+            $attendance->hasAttendedSchool = Attendance::isStudentPresentToday($attendance->student->user_id, $sessionDate);
+            return $attendance;
+        });
     }
 
     public function updateStatistics()
@@ -65,16 +76,30 @@ new #[Layout('layouts.app')] class extends Component {
     {
         try {
             $attendance = SubjectClassAttendance::findOrFail($attendanceId);
+            $student = $attendance->student;
+            $sessionDate = $this->session->class_date->format('Y-m-d');
 
-            // Update status
+            // Cek apakah siswa sudah absen gerbang/hadir hari ini
+            $hasAttendedSchool = Attendance::isStudentPresentToday($student->user_id, $sessionDate);
+
+            // Jika tidak hadir di sekolah tapi mencoba menandai hadir di kelas
+            if (!$hasAttendedSchool && $status === 'hadir') {
+                $this->dispatch('show-toast', [
+                    'type' => 'error',
+                    'message' => 'Siswa belum melakukan absensi gerbang, tidak dapat ditandai hadir di kelas',
+                ]);
+                return;
+            }
+
+            // Jika sudah lulus validasi, lanjutkan update status
             $attendance->status = $status;
 
-            // Update check-in time if status is 'hadir' and it wasn't before
+            // Update check-in time jika status hadir
             if ($status === 'hadir' && $attendance->check_in_time === null) {
                 $attendance->check_in_time = now();
             }
 
-            // Clear check-in time if status is not 'hadir'
+            // Clear check-in time jika status bukan hadir
             if ($status !== 'hadir') {
                 $attendance->check_in_time = null;
             }
@@ -111,20 +136,60 @@ new #[Layout('layouts.app')] class extends Component {
                 return;
             }
 
-            // Update all selected attendances
-            SubjectClassAttendance::whereIn('id', $attendanceIds)->update([
-                'status' => $status,
-                'check_in_time' => $status === 'hadir' ? now() : null,
-            ]);
+            if ($status === 'hadir') {
+                // Filter hanya siswa yang sudah absen gerbang
+                $allAttendances = $this->session->attendances()->with('student.user')->get();
+                $validAttendances = $allAttendances->filter(function ($attendance) {
+                    $sessionDate = $this->session->class_date->format('Y-m-d');
+                    $hasAttendedSchool = Attendance::isStudentPresentToday($attendance->student->user_id, $sessionDate);
 
-            // Reload data
-            $this->loadAttendances();
-            $this->updateStatistics();
+                    return $hasAttendedSchool;
+                });
 
-            $this->dispatch('show-toast', [
-                'type' => 'success',
-                'message' => 'Status kehadiran siswa berhasil diperbarui',
-            ]);
+                $validAttendanceIds = $validAttendances->pluck('id')->toArray();
+
+                if (count($validAttendanceIds) !== count($attendanceIds)) {
+                    $skippedCount = count($attendanceIds) - count($validAttendanceIds);
+                    $this->dispatch('show-toast', [
+                        'type' => 'warning',
+                        'message' => "$skippedCount siswa dilewati karena belum absen gerbang",
+                    ]);
+                }
+
+                // Jika tidak ada siswa yang valid sama sekali
+                if (empty($validAttendanceIds) && $status === 'hadir') {
+                    $this->dispatch('show-toast', [
+                        'type' => 'error',
+                        'message' => 'Tidak ada siswa yang bisa ditandai hadir karena belum ada yang absen gerbang',
+                    ]);
+                    return;
+                }
+
+                // Hanya update yang valid
+                $attendanceIds = $validAttendanceIds;
+            }
+
+            // Proses update untuk semua ID yang valid
+            if (!empty($attendanceIds)) {
+                SubjectClassAttendance::whereIn('id', $attendanceIds)->update([
+                    'status' => $status,
+                    'check_in_time' => $status === 'hadir' ? now() : null,
+                ]);
+
+                // Reload data
+                $this->loadAttendances();
+                $this->updateStatistics();
+
+                $this->dispatch('show-toast', [
+                    'type' => 'success',
+                    'message' => 'Status kehadiran siswa berhasil diperbarui (' . count($attendanceIds) . ' siswa)',
+                ]);
+            } else {
+                $this->dispatch('show-toast', [
+                    'type' => 'warning',
+                    'message' => 'Tidak ada siswa yang diperbarui',
+                ]);
+            }
         } catch (\Exception $e) {
             $this->dispatch('show-toast', [
                 'type' => 'error',
@@ -148,7 +213,7 @@ new #[Layout('layouts.app')] class extends Component {
     }
 }; ?>
 
-<div>
+<div class="mt-12 md:mt-0">
 
     <!-- Toast Notification Component -->
     <div x-data="{
@@ -392,9 +457,9 @@ new #[Layout('layouts.app')] class extends Component {
                                     viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
-                                Hadir
+
                             </span>
-                            Tandai Semua Hadir
+                            Semua Hadir
                         </button>
                         <button wire:click="bulkUpdate('tidak_hadir')"
                             class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
@@ -403,9 +468,9 @@ new #[Layout('layouts.app')] class extends Component {
                                 <svg class="-ml-0.5 mr-1 h-2 w-2 text-red-400" fill="currentColor" viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
-                                Tidak Hadir
+
                             </span>
-                            Tandai Semua Tidak Hadir
+                            Semua Tidak Hadir
                         </button>
                     </div>
                 </div>
@@ -423,10 +488,135 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
     </div>
 
-    <!-- Student Attendance List -->
-    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+    <!-- Card View for Mobile -->
+    <div class="mb-4 mt-4 space-y-4 md:hidden">
+        @forelse ($attendances as $attendance)
+            <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+                                <span class="text-sm font-medium text-gray-600">
+                                    {{ strtoupper(substr($attendance->student->user->name, 0, 2)) }}
+                                </span>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">{{ $attendance->student->user->name }}
+                                </p>
+                                <p class="text-xs text-gray-500">NISN: {{ $attendance->student->nisn ?? 'N/A' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div>
+                            @if ($attendance->status === 'hadir')
+                                <span
+                                    class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold leading-5 text-green-800">Hadir</span>
+                            @elseif($attendance->status === 'tidak_hadir')
+                                <span
+                                    class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold leading-5 text-red-800">Tidak
+                                    Hadir</span>
+                            @elseif($attendance->status === 'izin')
+                                <span
+                                    class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold leading-5 text-yellow-800">Izin</span>
+                            @elseif($attendance->status === 'sakit')
+                                <span
+                                    class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold leading-5 text-blue-800">Sakit</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <p class="text-xs text-gray-500">
+                            <span class="font-medium">Waktu Hadir:</span>
+                            {{ $attendance->check_in_time ? $attendance->check_in_time->timezone('Asia/Jakarta')->format('H:i') : '-' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex border-t border-gray-200 bg-gray-50 p-3">
+                    <button wire:click="updateAttendanceStatus({{ $attendance->id }}, 'hadir')"
+                        class="{{ $attendance->status === 'hadir' ? 'bg-green-50 text-green-600' : 'text-gray-500 hover:text-green-600' }} flex-1 rounded-md py-1 transition-colors duration-200">
+                        <div class="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 h-5 w-5" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-xs">Hadir</span>
+                        </div>
+                    </button>
+
+                    <button wire:click="updateAttendanceStatus({{ $attendance->id }}, 'tidak_hadir')"
+                        class="{{ $attendance->status === 'tidak_hadir' ? 'bg-red-50 text-red-600' : 'text-gray-500 hover:text-red-600' }} flex-1 rounded-md py-1 transition-colors duration-200">
+                        <div class="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 h-5 w-5" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span class="text-xs">Absen</span>
+                        </div>
+                    </button>
+
+                    <button wire:click="updateAttendanceStatus({{ $attendance->id }}, 'izin')"
+                        class="{{ $attendance->status === 'izin' ? 'bg-yellow-50 text-yellow-600' : 'text-gray-500 hover:text-yellow-600' }} flex-1 rounded-md py-1 transition-colors duration-200">
+                        <div class="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 h-5 w-5" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="text-xs">Izin</span>
+                        </div>
+                    </button>
+
+                    <button wire:click="updateAttendanceStatus({{ $attendance->id }}, 'sakit')"
+                        class="{{ $attendance->status === 'sakit' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:text-blue-600' }} flex-1 rounded-md py-1 transition-colors duration-200">
+                        <div class="flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 h-5 w-5" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <span class="text-xs">Sakit</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        @empty
+            <div class="rounded-lg bg-white p-6 text-center shadow">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data siswa</h3>
+                <p class="mt-1 text-sm text-gray-500">Tidak ada siswa yang ditemukan dengan filter yang dipilih.</p>
+                <div class="mt-6">
+                    <button wire:click="applyFilter('all')"
+                        class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Reset Filter
+                    </button>
+                </div>
+            </div>
+        @endforelse
+    </div>
+
+
+
+    <!-- Modified Table Layout - Hide on mobile, show on desktop -->
+    <div class="hidden overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:block md:rounded-lg">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-300">
+                <!-- Desktop table content remains the same -->
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col"

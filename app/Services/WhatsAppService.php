@@ -208,12 +208,14 @@ class WhatsAppService
             'kelas - terlambat' => 'Terlambat ⚠️',
             'kelas - izin' => 'Izin 📝',
             'kelas - sakit' => 'Sakit 🏥',
+            'pulang - hadir' => 'Tepat waktu ✅',
+            'pulang - tidak_hadir' => 'Belum absen pulang ❌',
             'hadir' => 'Tepat waktu ✅',
             'terlambat' => 'Terlambat ⚠️',
             'izin' => 'Izin 📝',
             'sakit' => 'Sakit 🏥',
             'tidak_hadir' => 'Tidak Hadir ❌',
-            'pulang_cepat' => 'Pulang lebih awal ⚠️',
+            'pulang - pulang_cepat' => 'Pulang lebih awal ⚠️',
             default => ucfirst($status)
         };
     }

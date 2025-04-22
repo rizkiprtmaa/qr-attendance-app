@@ -96,7 +96,7 @@ class SendDailySummary implements ShouldQueue
             $attendanceData[] = [
                 'subject' => 'Kepulangan Sekolah',
                 'time' => $pulang->check_in_time,
-                'status' => $pulang->status
+                'status' => "pulang" . " - " . $pulang->status
             ];
             Log::info("Added school departure (pulang) to summary: " . $pulang->check_in_time);
         }

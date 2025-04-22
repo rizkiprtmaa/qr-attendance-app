@@ -396,7 +396,7 @@ new class extends Component {
                     </svg>
                     Unduh Informasi
                 </button>
-                @if (auth()->user()->teacher->is_karyawan)
+                @role('kepala_sekolah')
                     <span
                         class="flex flex-row items-center gap-1 rounded-md bg-orange-300 px-2 py-1 text-xs text-orange-600"><svg
                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -404,16 +404,19 @@ new class extends Component {
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
                         </svg>
-                        Karyawan</span>
-                @else
-                    <span
-                        class="flex flex-row items-center gap-1 rounded-md bg-green-300 px-2 py-1 text-xs text-green-600"><svg
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-4">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-                        </svg>Pengajar</span>
-                @endif
+                        Kepala Sekolah</span>
+                @endrole
+                @hasrole('teacher')
+                    @unlessrole('kepala_sekolah')
+                        <span
+                            class="flex flex-row items-center gap-1 rounded-md bg-green-300 px-2 py-1 text-xs text-green-600"><svg
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                            </svg>Pengajar</span>
+                    @endunlessrole
+                @endhasrole
 
             </div>
         </div>
@@ -583,88 +586,90 @@ new class extends Component {
         </div>
 
         <!-- Jadwal Hari Ini -->
-        @if (!auth()->user()->teacher->is_karyawan)
-            <div class="mt-8 grid grid-cols-1 gap-0 md:grid-cols-1 md:gap-6">
-                <div class="col-span-2">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h2 class="text-md font-inter font-medium text-gray-800">Jadwal Hari Ini</h2>
-                        <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-                            <a href="{{ route('classes.attendances') }}">+ Buat kelas</a>
-                        </span>
-                    </div>
+        @hasrole('teacher')
+            @unlessrole('kepala_sekolah')
+                <div class="mt-8 grid grid-cols-1 gap-0 md:grid-cols-1 md:gap-6">
+                    <div class="col-span-2">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h2 class="text-md font-inter font-medium text-gray-800">Jadwal Hari Ini</h2>
+                            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+                                <a href="{{ route('classes.attendances') }}">+ Buat kelas</a>
+                            </span>
+                        </div>
 
-                    <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
-                        @php
-                            $hasClassesToday = false;
-                            $today = \Carbon\Carbon::now('Asia/Jakarta')->toDateString();
-                            foreach ($subjectClassSessions as $session) {
-                                if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today) {
-                                    $hasClassesToday = true;
-                                    break;
+                        <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                            @php
+                                $hasClassesToday = false;
+                                $today = \Carbon\Carbon::now('Asia/Jakarta')->toDateString();
+                                foreach ($subjectClassSessions as $session) {
+                                    if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today) {
+                                        $hasClassesToday = true;
+                                        break;
+                                    }
                                 }
-                            }
-                        @endphp
+                            @endphp
 
-                        @if ($hasClassesToday)
-                            <ul class="divide-y divide-gray-200">
-                                @foreach ($subjectClassSessions as $session)
-                                    @if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today)
-                                        <li class="w-full">
-                                            <a href="{{ route('session.attendance', $session) }}"
-                                                class="block w-full hover:bg-gray-50">
-                                                <div class="flex items-center p-4">
-                                                    <div
-                                                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-500">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                            viewBox="0 0 24 24" stroke-width="1.5"
-                                                            stroke="currentColor" class="h-5 w-5">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                                                        </svg>
-                                                    </div>
-                                                    <div class="ml-4 flex-1">
-                                                        <h3 class="md:text-md text-sm font-medium text-gray-900">
-                                                            {{ $session->subject_title }}
-                                                        </h3>
-                                                        <div class="flex items-center justify-between">
-                                                            <p class="text-xs text-gray-500 md:text-sm">
-                                                                {{ $session->subjectClass->class_name }} -
-                                                                {{ $session->subjectClass->classes->name }} -
-                                                                {{ $session->subjectClass->classes->major->code }}</p>
+                            @if ($hasClassesToday)
+                                <ul class="divide-y divide-gray-200">
+                                    @foreach ($subjectClassSessions as $session)
+                                        @if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today)
+                                            <li class="w-full">
+                                                <a href="{{ route('session.attendance', $session) }}"
+                                                    class="block w-full hover:bg-gray-50">
+                                                    <div class="flex items-center p-4">
+                                                        <div
+                                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-500">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                                class="h-5 w-5">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div class="ml-4 flex-1">
+                                                            <h3 class="md:text-md text-sm font-medium text-gray-900">
+                                                                {{ $session->subject_title }}
+                                                            </h3>
+                                                            <div class="flex items-center justify-between">
+                                                                <p class="text-xs text-gray-500 md:text-sm">
+                                                                    {{ $session->subjectClass->class_name }} -
+                                                                    {{ $session->subjectClass->classes->name }} -
+                                                                    {{ $session->subjectClass->classes->major->code }}</p>
 
-                                                            <p class="text-xs font-medium text-gray-900 md:text-sm">
-                                                                {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }}
-                                                                -
-                                                                {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
-                                                            </p>
+                                                                <p class="text-xs font-medium text-gray-900 md:text-sm">
+                                                                    {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }}
+                                                                    -
+                                                                    {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    @endif
-                                @endforeach
-                            </ul>
-                        @else
-                            <div class="flex flex-col items-center justify-center p-8">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="h-12 w-12 text-gray-300">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                </svg>
-                                <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada jadwal hari ini</h3>
-                                <p class="mt-1 text-center text-sm text-gray-500">Anda tidak memiliki kelas yang
-                                    dijadwalkan untuk hari
-                                    ini.</p>
-                            </div>
-                        @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div class="flex flex-col items-center justify-center p-8">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="h-12 w-12 text-gray-300">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada jadwal hari ini</h3>
+                                    <p class="mt-1 text-center text-sm text-gray-500">Anda tidak memiliki kelas yang
+                                        dijadwalkan untuk hari
+                                        ini.</p>
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
 
+
                 </div>
-
-
-            </div>
-        @endif
+            @endunlessrole
+        @endhasrole
 
         <!-- Recent Classes -->
         {{-- <div class="mt-8">
@@ -745,7 +750,7 @@ new class extends Component {
 
         {{-- Today Attendance History --}}
         <!-- Attendance History -->
-        @if (auth()->user()->teacher->is_karyawan)
+        @role('kepala_sekolah')
             <div class="mt-6">
                 <div class="flex items-center justify-between">
                     <h2 class="text-base font-medium">Riwayat Kehadiran</h2>
@@ -809,7 +814,7 @@ new class extends Component {
                         </div>
                     @endif
 
-                    @if (!$checkIn && !$checkOut && count($subjects) == 0)
+                    @if (!$checkIn && !$checkOut)
                         <div
                             class="flex flex-col items-center justify-center rounded-lg bg-white p-6 text-center shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -823,7 +828,9 @@ new class extends Component {
                     @endif
                 </div>
             </div>
-        @endif
+        @endrole
+
+
     </div>
 
 

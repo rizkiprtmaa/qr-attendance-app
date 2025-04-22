@@ -38,6 +38,26 @@ new class extends Component {
         }
     }
 
+    // Helper function untuk mendapatkan warna badge berdasarkan tingkat kelas
+    public function getClassLevelBadgeColor($className)
+    {
+        // Extract angka kelas (10, 11, 12) dari nama kelas
+        $classLevel = null;
+
+        // Cek apakah nama kelas dimulai dengan angka kelas
+        if (preg_match('/^(10|11|12)/i', $className, $matches)) {
+            $classLevel = $matches[1];
+        }
+
+        // Tentukan warna berdasarkan tingkat kelas
+        return match ($classLevel) {
+            '10' => 'bg-emerald-200 text-emerald-800',
+            '11' => 'bg-amber-200 text-amber-800',
+            '12' => 'bg-purple-200 text-purple-800',
+            default => 'bg-gray-200 text-gray-800',
+        };
+    }
+
     public function render(): mixed
     {
         // Query dasar untuk subject classes
@@ -586,7 +606,8 @@ new class extends Component {
                         <!-- Class Info -->
                         <div class="col-span-2 hidden px-3 py-4 md:block">
                             <div class="flex items-center justify-center">
-                                <div class="rounded-md bg-blue-200 px-2 py-1 text-xs text-blue-600">
+                                <div
+                                    class="{{ $this->getClassLevelBadgeColor($subjectClass->classes->name) }} rounded-md px-2 py-1 text-xs">
                                     {{ $subjectClass->classes->name }}
                                 </div>
                             </div>
@@ -596,7 +617,7 @@ new class extends Component {
                         <div class="col-span-1 px-1 py-4 md:col-span-2 md:px-3">
                             <div class="flex items-center justify-center">
                                 <div
-                                    class="rounded-md bg-green-200 px-2 py-1 text-center text-[0.625rem] text-green-600 md:text-xs">
+                                    class="{{ $subjectClass->classes->major->badge_color }} rounded-md px-2 py-1 text-center text-[0.625rem] md:text-xs">
                                     {{ $subjectClass->classes->major->name }}
                                 </div>
                             </div>
@@ -717,102 +738,127 @@ new class extends Component {
 
 
     <!-- Perbaikan card mobile dengan notifikasi jumlah pertemuan -->
-    <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow md:hidden">
-        @foreach ($subjectClasses as $subjectClass)
-            <div class="p-4">
-                <div class="flex flex-row items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="relative mr-3 inline-flex">
+    <div class="md:hidden">
+        @if ($subjectClasses->count() > 0)
+            <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow">
+                @foreach ($subjectClasses as $subjectClass)
+                    <div class="p-4">
+                        <div class="flex flex-row items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative mr-3 inline-flex">
 
-                            <!-- Icon kelas -->
-                            <div
-                                class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-900"><a
-                                    href="{{ route('subject.detail', $subjectClass) }}"
-                                    wire:navigate>{{ $subjectClass->class_name }}</a></div>
-
-                            <div class="mt-1 flex flex-row gap-1">
-                                <span
-                                    class="rounded-md bg-blue-200 px-2 py-1 text-[0.625rem] text-blue-600">{{ $subjectClass->classes->name }}</span>
-                                <span
-                                    class="rounded-md bg-green-200 px-2 py-1 text-[0.625rem] text-green-600">{{ $subjectClass->classes->major->name }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Actions Column -->
-                    <div class="relative flex flex-row items-center text-center">
-                        <div class="relative inline-block text-left">
-                            <button @click="toggleMenu({{ $subjectClass->id }})" type="button"
-                                class="rounded-md bg-blue-300 px-3 text-white hover:bg-blue-100 hover:text-gray-700 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                </svg>
-                            </button>
-
-                            <!-- Dropdown -->
-                            <div x-cloak x-show="sessionMenuOpen === {{ $subjectClass->id }}"
-                                style="position: absolute; bottom: 100%; right: 0; margin-bottom: 0.5rem;"
-                                @click.away="sessionMenuOpen = null"
-                                class="absolute bottom-full right-0 mt-2 w-48 origin-bottom-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                                style="z-index: 100;" x-transition:enter="transition ease-out duration-100"
-                                x-transition:enter-start="transform opacity-0 scale-95"
-                                x-transition:enter-end="transform opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="transform opacity-100 scale-100"
-                                x-transition:leave-end="transform opacity-0 scale-95">
-
-                                <div class="py-1">
-                                    <a href="{{ route('subject.detail', $subjectClass) }}" wire:navigate
-                                        class="flex w-full items-center px-4 py-2 text-sm text-slate-900 hover:bg-gray-100">
+                                    <!-- Icon kelas -->
+                                    <div
+                                        class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor"
-                                            class="mr-2 h-4 w-4 text-blue-500">
+                                            stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                                                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                                         </svg>
-                                        Kelola
-                                    </a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900"><a
+                                            href="{{ route('subject.detail', $subjectClass) }}"
+                                            wire:navigate>{{ $subjectClass->class_name }}</a></div>
 
-                                    <button wire:click="editSubjectClass({{ $subjectClass->id }})"
-                                        @click="sessionMenuOpen = null"
-                                        class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <div class="mt-1 flex flex-row gap-1">
+                                        <span
+                                            class="{{ $this->getClassLevelBadgeColor($subjectClass->classes->name) }} rounded-md px-2 py-1 text-[0.625rem]">{{ $subjectClass->classes->name }}</span>
+                                        <span
+                                            class="{{ $subjectClass->classes->major->badge_color }} rounded-md px-2 py-1 text-[0.625rem]">{{ $subjectClass->classes->major->code }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Actions Column -->
+                            <div class="relative flex flex-row items-center text-center">
+                                <div class="relative inline-block text-left">
+                                    <button @click="toggleMenu({{ $subjectClass->id }})" type="button"
+                                        class="rounded-md bg-blue-300 px-3 text-white hover:bg-blue-100 hover:text-gray-700 focus:outline-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor"
-                                            class="mr-2 h-4 w-4 text-blue-500">
+                                            stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                                         </svg>
-                                        Edit Kelas
                                     </button>
 
-                                    <button wire:click="confirmDeleteSubject({{ $subjectClass['id'] }})"
-                                        @click="deleteSubjectModal = true; sessionMenuOpen = null"
-                                        class="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor"
-                                            class="mr-2 h-4 w-4 text-red-500">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                        </svg>
-                                        Hapus Kelas
-                                    </button>
+                                    <!-- Dropdown -->
+                                    <div x-cloak x-show="sessionMenuOpen === {{ $subjectClass->id }}"
+                                        style="position: absolute; bottom: 100%; right: 0; margin-bottom: 0.5rem;"
+                                        @click.away="sessionMenuOpen = null"
+                                        class="absolute bottom-full right-0 mt-2 w-48 origin-bottom-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                        style="z-index: 100;" x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95">
+
+                                        <div class="py-1">
+                                            <a href="{{ route('subject.detail', $subjectClass) }}" wire:navigate
+                                                class="flex w-full items-center px-4 py-2 text-sm text-slate-900 hover:bg-gray-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-2 h-4 w-4 text-blue-500">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                                                </svg>
+                                                Kelola
+                                            </a>
+
+                                            <button wire:click="editSubjectClass({{ $subjectClass->id }})"
+                                                @click="sessionMenuOpen = null"
+                                                class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-2 h-4 w-4 text-blue-500">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                </svg>
+                                                Edit Kelas
+                                            </button>
+
+                                            <button wire:click="confirmDeleteSubject({{ $subjectClass['id'] }})"
+                                                @click="deleteSubjectModal = true; sessionMenuOpen = null"
+                                                class="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-2 h-4 w-4 text-red-500">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                </svg>
+                                                Hapus Kelas
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                @endforeach
+            </div>
+        @else
+            <!-- Null state for mobile -->
+            <div class="mt-5 rounded-lg bg-white p-6 text-center shadow">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="mx-auto h-10 w-10 text-gray-400">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada kelas</h3>
+                <p class="mt-1 text-sm text-gray-500">Buat kelas baru untuk mulai mengelola presensi.</p>
+                <div class="mt-4">
+                    <button @click="showCreateClasses = true" type="button"
+                        class="inline-flex items-center rounded-md bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="-ml-0.5 mr-1.5 h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Buat Kelas
+                    </button>
                 </div>
             </div>
-        @endforeach
+        @endif
     </div>
 
 
@@ -847,8 +893,8 @@ new class extends Component {
                 </p>
             </div>
             <!-- Dialog Body -->
-            <div class="px-5 md:px-8">
-                <form wire:submit="createClasses">
+            <form wire:submit="createClasses">
+                <div class="px-5 md:px-8">
                     <div class="mb-4">
                         <label for="name" class="font-inter text-sm font-semibold text-slate-500">Nama
                             Mata Pelajaran</label>
@@ -904,17 +950,17 @@ new class extends Component {
 
 
 
-            </div>
-            <!-- Dialog Footer -->
-            <div
-                class="border-outline bg-surface-alt/60 dark:border-outline-dark dark:bg-surface-dark/20 flex flex-col-reverse justify-between gap-2 border-t p-4 sm:flex-row sm:items-center md:justify-end">
-                <button x-on:click="showCreateClasses = false" type="button"
-                    class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
-                <button type="submit"
-                    class="rounded-md bg-blue-600 px-4 py-2 font-inter text-sm font-medium tracking-wide text-white hover:bg-blue-700"
-                    type="submit" x-on:click="showCreateClasses = false">Buat Kelas</button>
-                </form>
-            </div>
+                </div>
+                <!-- Dialog Footer -->
+                <div
+                    class="border-outline bg-surface-alt/60 dark:border-outline-dark dark:bg-surface-dark/20 flex flex-col-reverse justify-between gap-2 border-t p-4 sm:flex-row sm:items-center md:justify-end">
+                    <button x-on:click="showCreateClasses = false" type="button"
+                        class="text-on-surface focus-visible:outline-primary dark:text-on-surface-dark dark:focus-visible:outline-primary-dark whitespace-nowrap rounded-md px-4 py-2 text-center text-sm font-medium tracking-wide transition hover:bg-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-100 active:outline-offset-0">Batal</button>
+                    <button type="submit"
+                        class="rounded-md bg-blue-600 px-4 py-2 font-inter text-sm font-medium tracking-wide text-white hover:bg-blue-700"
+                        type="submit" x-on:click="showCreateClasses = false">Buat Kelas</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1037,9 +1083,10 @@ new class extends Component {
                         </p>
                     </div>
                 </div>
-                <div class="mt-5 flex justify-center gap-3 sm:mt-4">
+                <!-- Fixed button container -->
+                <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center sm:gap-3">
                     <button type="button" @click="deleteSubjectModal = false"
-                        class="mt-0 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm md:mt-3">
+                        class="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto sm:text-sm">
                         Batal
                     </button>
                     <button type="button" wire:click="deleteSubjectClass" @click="deleteSubjectModal = false"

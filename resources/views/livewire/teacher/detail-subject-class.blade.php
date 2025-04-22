@@ -61,7 +61,7 @@ new #[Layout('layouts.app')] class extends Component {
         $this->subjectName = $subjectClass->class_name;
         $this->subjectCode = $subjectClass->class_code;
         $this->className = $subjectClass->classes->name;
-        $this->major = $subjectClass->classes->major->name;
+        $this->major = $subjectClass->classes->major->code;
         $this->classesId = $subjectClass->classes->id;
 
         // Pastikan properti default untuk search dan filter sudah diinisialisasi
@@ -1009,17 +1009,17 @@ new #[Layout('layouts.app')] class extends Component {
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <div class="text-xs font-medium uppercase text-gray-500">Tanggal</div>
-                                        <div class="mt-1 flex items-center text-sm text-gray-900">
+                                        <div class="mt-1 flex items-center whitespace-nowrap text-sm text-gray-900">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
                                                 class="mr-1.5 h-4 w-4 text-gray-400">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                     d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                                             </svg>
-                                            {{ \Carbon\Carbon::parse($session['class_date'])->format('d M Y') }}
+                                            {{ \Carbon\Carbon::parse($session['class_date'])->locale('id')->translatedFormat('l, d M Y') }}
                                         </div>
                                     </div>
-                                    <div>
+                                    <div class="flex flex-col items-end">
                                         <div class="text-xs font-medium uppercase text-gray-500">Waktu</div>
                                         <div class="mt-1 flex items-center text-sm text-gray-900">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"

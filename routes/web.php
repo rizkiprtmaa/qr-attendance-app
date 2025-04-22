@@ -74,7 +74,7 @@ Route::view('attendances', 'admin.attendances.index')->middleware(['auth', 'veri
 
 Route::view('arrival-scanner', 'admin.attendances.arrival-scanner')->middleware(['auth', 'verified', 'role:admin'])->name('arrival.scanner');
 
-Volt::route('users/{user}/detail', 'user.user-detail')->middleware(['auth', 'verified', 'role:admin|teacher'])->name('user.detail');
+Volt::route('users/{user}/detail', 'user.user-detail')->middleware(['auth', 'verified', 'role:admin|teacher|kepala_sekolah'])->name('user.detail');
 
 Route::view('classes-attendances', 'teacher.classes.index')->middleware(['auth', 'verified', 'role:teacher'])->name('classes.attendances');
 Volt::route('classes-attendances/{subjectClass}/detail', 'teacher.detail-subject-class')->middleware(['auth', 'verified', 'role:teacher'])->name('subject.detail');
@@ -143,6 +143,14 @@ Route::get('/student/attendance/detail/subject/{date}/{id}', function ($date, $i
 Route::get('/download-user-card/{user?}', [UserCardController::class, 'download'])
     ->name('download.user-card')
     ->middleware(['auth']);
+
+Route::view('/teacher-attendances', 'principle.teacher-attendance')
+    ->middleware(['auth', 'verified', 'role:kepala_sekolah'])
+    ->name('teacher.attendances');
+
+Route::view('/live-classes', 'principle.live-classes')
+    ->middleware(['auth', 'verified', 'role:kepala_sekolah'])
+    ->name('teacher.live-classes');
 
 
 

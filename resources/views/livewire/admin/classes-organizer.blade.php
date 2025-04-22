@@ -23,6 +23,9 @@ new class extends Component {
     public $majorFilter = null;
     public $perPage = 10;
 
+    // Tambahkan badge_color ke property component
+    public $badge_color = 'bg-gray-100 text-gray-800';
+
     // For editing
     public $editingMajorId = null;
     public $editingClassId = null;
@@ -44,11 +47,13 @@ new class extends Component {
         $this->validate([
             'name' => 'required|string|min:3|max:100',
             'code' => 'required|string|min:2|max:10|unique:majors,code',
+            'badge_color' => 'required|string',
         ]);
 
         Major::create([
             'name' => $this->name,
             'code' => $this->code,
+            'badge_color' => $this->badge_color,
         ]);
 
         $this->dispatch('notify', [
@@ -56,7 +61,7 @@ new class extends Component {
             'message' => 'Jurusan berhasil ditambahkan',
         ]);
 
-        $this->reset(['name', 'code']);
+        $this->reset(['name', 'code', 'badge_color']);
     }
 
     public function startEditMajor($id)
@@ -65,6 +70,7 @@ new class extends Component {
         $major = Major::findOrFail($id);
         $this->name = $major->name;
         $this->code = $major->code;
+        $this->badge_color = $major->badge_color;
     }
 
     public function updateMajor()
@@ -72,12 +78,14 @@ new class extends Component {
         $this->validate([
             'name' => 'required|string|min:3|max:100',
             'code' => 'required|string|min:2|max:10|unique:majors,code,' . $this->editingMajorId,
+            'badge_color' => 'required|string',
         ]);
 
         $major = Major::findOrFail($this->editingMajorId);
         $major->update([
             'name' => $this->name,
             'code' => $this->code,
+            'badge_color' => $this->badge_color,
         ]);
 
         // Update related classes if needed
@@ -111,7 +119,7 @@ new class extends Component {
             // Cek apakah ada kelas yang terkait
             $relatedClasses = Classes::where('major_id', $id)->count();
             if ($relatedClasses > 0) {
-                $this->dispatch('notify', [
+                $this->dispatch('show-toast', [
                     'type' => 'error',
                     'message' => 'Tidak dapat menghapus jurusan yang masih memiliki kelas',
                 ]);
@@ -120,12 +128,12 @@ new class extends Component {
 
             $major->delete();
 
-            $this->dispatch('notify', [
+            $this->dispatch('show-toast', [
                 'type' => 'success',
                 'message' => 'Jurusan berhasil dihapus',
             ]);
         } catch (\Exception $e) {
-            $this->dispatch('notify', [
+            $this->dispatch('show-toast', [
                 'type' => 'error',
                 'message' => 'Gagal menghapus jurusan: ' . $e->getMessage(),
             ]);
@@ -148,7 +156,7 @@ new class extends Component {
             'teacher_id' => $this->teacher,
         ]);
 
-        $this->dispatch('notify', [
+        $this->dispatch('show-toast', [
             'type' => 'success',
             'message' => 'Kelas berhasil ditambahkan',
         ]);
@@ -183,12 +191,19 @@ new class extends Component {
             'teacher_id' => $this->teacher,
         ]);
 
-        $this->dispatch('notify', [
+        $this->dispatch('show-toast', [
             'type' => 'success',
             'message' => 'Kelas berhasil diperbarui',
         ]);
 
         $this->reset(['classesName', 'major', 'schoolYear', 'teacher', 'editingClassId']);
+    }
+
+    public function reset(...$properties)
+    {
+        // ...
+        $this->badge_color = 'bg-gray-100 text-gray-800';
+        // ...
     }
 
     public function deleteClass($id)
@@ -208,12 +223,12 @@ new class extends Component {
 
             $class->delete();
 
-            $this->dispatch('notify', [
+            $this->dispatch('show-toast', [
                 'type' => 'success',
                 'message' => 'Kelas berhasil dihapus',
             ]);
         } catch (\Exception $e) {
-            $this->dispatch('notify', [
+            $this->dispatch('show-toast', [
                 'type' => 'error',
                 'message' => 'Gagal menghapus kelas: ' . $e->getMessage(),
             ]);
@@ -351,6 +366,60 @@ new class extends Component {
         </div>
     </div>
 
+    <!-- Toast Notification Component -->
+    <div x-data="{
+        toastMessage: '',
+        toastType: '',
+        showToast: false
+    }"
+        x-on:show-toast.window="
+            const data = $event.detail[0] || $event.detail;
+            toastMessage = data.message;
+            toastType = data.type;
+            showToast = true;
+            setTimeout(() => showToast = false, 3000)
+         ">
+
+        <div x-cloak x-show="showToast" x-transition.opacity
+            :class="toastType === 'success' ? 'bg-white text-gray-500' : 'bg-red-100 text-red-700'"
+            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg p-4 shadow"
+            role="alert">
+
+            <template x-if="toastType === 'success'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <template x-if="toastType === 'error'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <div class="ml-3 text-sm font-normal" x-text="toastMessage"></div>
+
+            <button type="button" @click="showToast = false"
+                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300">
+                <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
     <!-- Header with Title and Search -->
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -451,7 +520,7 @@ new class extends Component {
                                 <tr wire:key="major-{{ $major->id }}" class="hover:bg-gray-50">
                                     <td class="whitespace-nowrap px-6 py-4">
                                         <div
-                                            class="inline-flex items-center justify-center rounded-md bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-800">
+                                            class="{{ $major->badge_color }} inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium">
                                             {{ $major->code }}
                                         </div>
                                     </td>
@@ -502,7 +571,7 @@ new class extends Component {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <div
-                                        class="inline-flex items-center rounded-md bg-blue-100 px-2.5 py-1 text-sm font-medium text-blue-800">
+                                        class="{{ $major->badge_color }} inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium">
                                         {{ $major->code }}
                                     </div>
                                     <h3 class="mt-2 text-lg font-medium text-gray-900">{{ $major->name }}</h3>
@@ -627,7 +696,7 @@ new class extends Component {
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                                         <div
-                                            class="inline-flex items-center justify-center rounded-md bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
+                                            class="{{ $class->major->badge_color }} inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium">
                                             {{ $class->major->code ?? 'N/A' }}
                                         </div>
                                         <span class="ml-2">{{ $class->major->name ?? 'Tidak ada jurusan' }}</span>
@@ -695,7 +764,7 @@ new class extends Component {
                             <div class="flex items-center justify-between">
                                 <h3 class="text-xl font-bold text-white">{{ $class->name }}</h3>
                                 <div
-                                    class="inline-flex items-center justify-center rounded-md bg-white bg-opacity-25 px-2.5 py-1 text-xs font-medium text-white">
+                                    class="{{ $class->major->badge_color }} inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium">
                                     {{ $class->major->code ?? 'N/A' }}
                                 </div>
                             </div>
@@ -820,6 +889,25 @@ new class extends Component {
                             <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
                         @enderror
                     </div>
+
+                    <div>
+                        <label for="badge_color" class="block text-sm font-medium text-gray-700">Warna Badge</label>
+                        <select id="badge_color" wire:model="badge_color"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            <option value="bg-gray-100 text-gray-800">Abu-abu (Default)</option>
+                            <option value="bg-blue-100 text-blue-800">Biru</option>
+                            <option value="bg-green-100 text-green-800">Hijau</option>
+                            <option value="bg-red-100 text-red-800">Merah</option>
+                            <option value="bg-yellow-100 text-yellow-800">Kuning</option>
+                            <option value="bg-purple-100 text-purple-800">Ungu</option>
+                            <option value="bg-pink-100 text-pink-800">Pink</option>
+                            <option value="bg-indigo-100 text-indigo-800">Indigo</option>
+                            <option value="bg-orange-100 text-orange-800">Oranye</option>
+                        </select>
+                        @error('badge_color')
+                            <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="mt-6 flex justify-end space-x-3">
@@ -874,6 +962,25 @@ new class extends Component {
                         <input type="text" id="edit-code" wire:model="code"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                         @error('code')
+                            <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="badge_color" class="block text-sm font-medium text-gray-700">Warna Badge</label>
+                        <select id="badge_color" wire:model="badge_color"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            <option value="bg-gray-100 text-gray-800">Abu-abu (Default)</option>
+                            <option value="bg-blue-100 text-blue-800">Biru</option>
+                            <option value="bg-green-100 text-green-800">Hijau</option>
+                            <option value="bg-red-100 text-red-800">Merah</option>
+                            <option value="bg-yellow-100 text-yellow-800">Kuning</option>
+                            <option value="bg-purple-100 text-purple-800">Ungu</option>
+                            <option value="bg-pink-100 text-pink-800">Pink</option>
+                            <option value="bg-indigo-100 text-indigo-800">Indigo</option>
+                            <option value="bg-orange-100 text-orange-800">Oranye</option>
+                        </select>
+                        @error('badge_color')
                             <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
                         @enderror
                     </div>

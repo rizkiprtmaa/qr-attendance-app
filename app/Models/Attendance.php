@@ -72,6 +72,23 @@ class Attendance extends Model
         ]);
     }
 
+    public static function getDisplayStatus($status, $userId)
+    {
+        // Ambil data user
+        $user = User::find($userId);
+
+        // Jika user adalah guru (role "teacher" atau is_karyawan = 0 atau 1)
+        if ($user->hasRole('teacher')) {
+            // Jika statusnya terlambat, ganti menjadi hadir untuk tampilan saja
+            if ($status === 'terlambat') {
+                return 'hadir';
+            }
+        }
+
+        // Untuk siswa atau status lain, kembalikan status asli
+        return $status;
+    }
+
     protected static function determineAttendanceStatus($type, $checkTime = null)
     {
         if ($checkTime === null) {
@@ -83,7 +100,7 @@ class Attendance extends Model
         if ($type === 'datang') {
             /// Definisikan batas waktu presensi datang
             $jamAwalValid = $checkTime->copy()->setTime(0, 0, 0);
-            $jamAkhirValid = $checkTime->copy()->setTime(7, 0, 0);
+            $jamAkhirValid = $checkTime->copy()->setTime(7, 30, 0);
 
             Log::info('Jam Awal Valid: ' . $jamAwalValid->toDateTimeString());
             Log::info('Jam Akhir Valid: ' . $jamAkhirValid->toDateTimeString());
@@ -115,5 +132,30 @@ class Attendance extends Model
         return self::where('user_id', $userId)
             ->where('attendance_date', $now->toDateString())
             ->get();
+    }
+
+    public function getStudentAttendanceByDate($studentId, $date)
+    {
+        return $this->where('user_id', $studentId)
+            ->where('attendance_date', $date)
+            ->where('type', 'datang')
+            ->first();
+    }
+
+    // Helper function untuk mengecek kehadiran
+    public static function isStudentPresentToday($studentId, $date)
+    {
+        $attendance = (new self)->getStudentAttendanceByDate($studentId, $date);
+        $result = $attendance && ($attendance->status === 'hadir' || $attendance->status === 'terlambat');
+
+        // Debug
+        Log::info("Checking attendance for student $studentId on $date: " . ($result ? 'Present' : 'Absent'));
+        if ($attendance) {
+            Log::info("Status: " . $attendance->status);
+        } else {
+            Log::info("No attendance record found");
+        }
+
+        return $result;
     }
 }

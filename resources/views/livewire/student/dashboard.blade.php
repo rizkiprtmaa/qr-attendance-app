@@ -68,7 +68,7 @@ new class extends Component {
                     return [
                         'id' => $attendance->id,
                         'name' => $attendance->session->subjectClass->class_name ?? 'Tidak diketahui',
-                        'start_time' => Carbon::parse($attendance->check_in_time)->format('H:i'),
+                        'start_time' => Carbon::parse($attendance->check_in_time)->timezone('asia/jakarta')->format('H:i'),
                         'color' => $colorClasses[$colorIndex],
                         'status' => $attendance->status ?? 'hadir',
                     ];
@@ -115,7 +115,7 @@ new class extends Component {
                         <h2 class="font-inter text-lg font-semibold">{{ auth()->user()->name }}</h2>
                         <div class="flex flex-col gap-1 font-inter text-xs md:text-sm">
                             <span
-                                class="truncate">{{ auth()->user()->student->classes->name . ' ' . auth()->user()->student->classes->major->name ?? 'Tidak ada kelas' }}</span>
+                                class="truncate">{{ auth()->user()->student->classes->name . ' ' . auth()->user()->student->classes->major->code ?? 'Tidak ada kelas' }}</span>
                             <span
                                 class="md:tex-sm font-inter text-xs text-gray-600">{{ auth()->user()->student->nisn ?? '000' }}</span>
                         </div>

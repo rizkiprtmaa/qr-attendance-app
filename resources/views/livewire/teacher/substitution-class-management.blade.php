@@ -149,7 +149,7 @@ new #[Layout('layouts.app')] class extends Component {
     }
 }; ?>
 
-<div>
+<div class="mt-12 md:mt-0">
     <!-- Toast Notification Component -->
     <div x-data="{
         toastMessage: '',
