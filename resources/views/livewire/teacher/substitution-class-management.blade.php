@@ -27,6 +27,9 @@ new #[Layout('layouts.app')] class extends Component {
     #[Rule('required|after:startTime', message: 'Jam selesai harus setelah jam mulai')]
     public $endTime;
 
+    #[Rule('required', message: 'Jam pelajaran harus diisi')]
+    public $jamPelajaran;
+
     // Modals
     public $showCreateSessionModal = false;
 
@@ -85,6 +88,7 @@ new #[Layout('layouts.app')] class extends Component {
                 'class_date' => $classDateTime,
                 'start_time' => $this->startTime,
                 'end_time' => $this->endTime,
+                'jam_pelajaran' => $this->jamPelajaran,
                 'created_by_substitute' => auth()->id(),
                 'substitution_request_id' => $this->substitution->id,
                 'notes' => 'Pertemuan oleh guru pengganti',
@@ -404,6 +408,16 @@ new #[Layout('layouts.app')] class extends Component {
                                     @enderror
                                 </div>
                             </div>
+                            <div class="mb-4">
+                                <label for="jamPelajaran" class="block text-sm font-medium text-gray-700">Jumlah
+                                    JP</label>
+                                <input type="number" wire:model='jamPelajaran' placeholder="Atur Jumlah JP"
+                                    class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('jamPelajaran')
+                                    <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
+                                @enderror
+                            </div>
+
                         </div>
                     </form>
                 </div>

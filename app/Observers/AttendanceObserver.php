@@ -14,10 +14,10 @@ class AttendanceObserver
     public function created(Attendance $attendance): void
     {
         // Cek jika ini attendance datang, kirim notifikasi
-        if ($attendance->type == 'datang') {
-            // Dispatch job untuk kirim notifikasi ke orang tua
-            SendAttendanceNotification::dispatch($attendance);
-        }
+        // if ($attendance->type == 'datang') {
+        //     // Dispatch job untuk kirim notifikasi ke orang tua
+        //     SendAttendanceNotification::dispatch($attendance);
+        // }
 
         // Jika ini attendance pulang dan terakhir dari hari ini, kirim ringkasan
         if ($attendance->type == 'pulang') {

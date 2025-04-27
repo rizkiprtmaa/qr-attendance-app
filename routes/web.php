@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserCardController;
 use App\Http\Controllers\ClassReportController;
 use App\Http\Controllers\AttendancePdfController;
+use App\Http\Controllers\TeacherReportController;
 
 
 Route::view('/', 'welcome');
@@ -151,6 +152,14 @@ Route::view('/teacher-attendances', 'principle.teacher-attendance')
 Route::view('/live-classes', 'principle.live-classes')
     ->middleware(['auth', 'verified', 'role:kepala_sekolah'])
     ->name('teacher.live-classes');
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    // Rute laporan presensi guru
+    Route::get('/admin/reports/teacher-attendance', [TeacherReportController::class, 'generateTeacherAttendanceReport'])->name('teacher.attendance.report');
+
+    // Rute laporan presensi karyawan & kepala sekolah
+    Route::get('/admin/reports/staff-attendance', [TeacherReportController::class, 'generateStaffAttendanceReport'])->name('staff.attendance.report');
+});
 
 
 

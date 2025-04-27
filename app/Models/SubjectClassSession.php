@@ -17,7 +17,8 @@ class SubjectClassSession extends Model
         'end_time',
         'created_by_substitute',
         'substitution_request_id',
-        'notes'
+        'notes',
+        'jam_pelajaran'
     ];
 
     protected $casts = [

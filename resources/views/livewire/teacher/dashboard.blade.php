@@ -7,6 +7,7 @@ use App\Models\SubjectClass;
 use App\Models\SubjectClassSession;
 use App\Models\Teacher;
 use App\Models\SubjectClassAttendance;
+use Illuminate\Support\Str;
 
 new class extends Component {
     public $attendances;
@@ -220,7 +221,7 @@ new class extends Component {
         $this->calculateAttendanceStatistics();
 
         // 7. Pra-hitung nilai yang diperlukan di render
-        $this->totalHours = $this->calculateTotalHours();
+        $this->calculateTotalHours($this->teacherId);
         $this->loadAttendanceData();
     }
 
@@ -248,14 +249,23 @@ new class extends Component {
             ->get();
     }
 
-    private function calculateTotalHours()
+    private function calculateTotalHours($teacherId)
     {
-        $totalHours =
-            SubjectClassSession::whereIn('subject_class_id', $this->subjectClass->pluck('id'))
-                ->whereNull('created_by_substitute')
-                ->selectRaw('SUM(TIMESTAMPDIFF(HOUR, start_time, end_time)) as total_hours')
-                ->value('total_hours') ?? 0;
-        return number_format($totalHours, 2, '.', '');
+        // 1. Hitung JP dari kelas reguler (yang sudah Anda implementasikan)
+        $regularJP = SubjectClassSession::whereHas('subjectClass', function ($query) use ($teacherId) {
+            $query->where('user_id', $teacherId);
+        })
+            ->whereNull('created_by_substitute')
+            ->sum('jam_pelajaran');
+
+        // 2. Hitung JP dari kelas yang digantikan guru ini (sebagai guru pengganti)
+        $substitutionJP = SubjectClassSession::whereHas('substitutionRequest', function ($query) use ($teacherId) {
+            $query->where('substitute_teacher_id', $teacherId)->whereIn('status', ['approved', 'completed']);
+        })->sum('jam_pelajaran');
+
+        // Total JP
+
+        $this->totalHours = $regularJP + $substitutionJP;
     }
 
     public function render(): mixed
@@ -628,13 +638,15 @@ new class extends Component {
                                                         </div>
                                                         <div class="ml-4 flex-1">
                                                             <h3 class="md:text-md text-sm font-medium text-gray-900">
-                                                                {{ $session->subject_title }}
+                                                                {{ $session->subjectClass->classes->name }} -
+                                                                {{ $session->subjectClass->classes->major->code }}
                                                             </h3>
                                                             <div class="flex items-center justify-between">
-                                                                <p class="text-xs text-gray-500 md:text-sm">
+                                                                <p
+                                                                    class="overflow-hidden truncate text-xs text-gray-500 md:text-sm">
                                                                     {{ $session->subjectClass->class_name }} -
-                                                                    {{ $session->subjectClass->classes->name }} -
-                                                                    {{ $session->subjectClass->classes->major->code }}</p>
+                                                                    {{ Str::limit($session->subject_title, 30, '...') }}
+                                                                </p>
 
                                                                 <p class="text-xs font-medium text-gray-900 md:text-sm">
                                                                     {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }}

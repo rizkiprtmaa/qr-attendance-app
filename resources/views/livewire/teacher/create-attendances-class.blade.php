@@ -29,6 +29,9 @@ new class extends Component {
     public $editMajor;
     public $editClassId;
 
+    public $totalJP = 0;
+    public $totalSubstitution = 0;
+
     public function mount()
     {
         $this->teacherId = auth()->user()->id;
@@ -36,6 +39,30 @@ new class extends Component {
         if ($firstMajor) {
             $this->major = $firstMajor->id;
         }
+
+        $this->calculateTotalJP($this->teacherId);
+    }
+
+    public function calculateTotalJP($teacherId)
+    {
+        // 1. Hitung JP dari kelas reguler (yang sudah Anda implementasikan)
+        $regularJP = SubjectClassSession::whereHas('subjectClass', function ($query) use ($teacherId) {
+            $query->where('user_id', $teacherId);
+        })
+            ->whereNull('created_by_substitute')
+            ->sum('jam_pelajaran');
+
+        // 2. Hitung JP dari kelas yang digantikan guru ini (sebagai guru pengganti)
+        $substitutionJP = SubjectClassSession::whereHas('substitutionRequest', function ($query) use ($teacherId) {
+            $query->where('substitute_teacher_id', $teacherId)->whereIn('status', ['approved', 'completed']);
+        })->sum('jam_pelajaran');
+
+        // Total JP
+        $this->totalJP = $regularJP + $substitutionJP;
+
+        $this->totalSubstitution = SubjectClassSession::whereHas('substitutionRequest', function ($query) use ($teacherId) {
+            $query->where('substitute_teacher_id', $teacherId)->whereIn('status', ['approved', 'completed']);
+        })->count();
     }
 
     // Helper function untuk mendapatkan warna badge berdasarkan tingkat kelas
@@ -341,12 +368,12 @@ new class extends Component {
             <p class="text-2xl font-bold">{{ $totalSessions }}</p>
         </div>
         <div class="rounded-lg bg-white p-4 shadow-md">
-            <h3 class="mb-2 text-gray-500">Jumlah Jam</h3>
-            <p class="text-2xl font-bold">{{ $totalHours }}</p>
+            <h3 class="mb-2 text-gray-500">Total JP</h3>
+            <p class="text-2xl font-bold">{{ $totalJP }}</p>
         </div>
         <div class="rounded-lg bg-white p-4 shadow-md">
             <h3 class="mb-2 text-gray-500">Kelas Pengganti</h3>
-            <p class="text-2xl font-bold">0</p>
+            <p class="text-2xl font-bold">{{ $totalSubstitution }}</p>
         </div>
     </div>
 

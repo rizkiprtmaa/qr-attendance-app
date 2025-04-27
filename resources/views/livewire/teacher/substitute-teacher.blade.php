@@ -23,7 +23,7 @@ new class extends Component {
     #[Rule('required|date')]
     public $startDate;
 
-    #[Rule('nullable|date|after_or_equal:startDate')]
+    #[Rule('required|date|after_or_equal:startDate')]
     public $endDate;
 
     #[Rule('required')]
@@ -61,7 +61,7 @@ new class extends Component {
             'selectedUserId' => 'required',
             'selectedSubjectClassId' => 'required',
             'startDate' => 'required|date',
-            'endDate' => 'nullable|date|after_or_equal:startDate',
+            'endDate' => 'required|date|after_or_equal:startDate',
             'reason' => 'required',
         ]);
 
@@ -505,13 +505,14 @@ new class extends Component {
                             <!-- Tanggal Selesai (Opsional) -->
                             <div>
                                 <label for="endDate" class="block text-sm font-medium text-gray-700">Tanggal Selesai
-                                    (Opsional)</label>
+                                </label>
                                 <input type="date" wire:model.defer="endDate" id="endDate"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('endDate')
                                     <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
                                 @enderror
-                                <p class="mt-1 text-xs text-gray-500">Kosongkan jika hanya untuk satu hari</p>
+                                <p class="mt-1 text-xs text-gray-500">Isi tanggal yang sama jika hanya untuk satu hari
+                                </p>
                             </div>
 
                             <!-- Alasan -->

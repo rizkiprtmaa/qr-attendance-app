@@ -34,12 +34,16 @@ new #[Layout('layouts.app')] class extends Component {
     #[Rule('required', message: 'Jam selesai harus diisi')]
     public $endTime;
 
+    #[Rule('required', message: 'Jam pelajaran harus diisi')]
+    public $jamPelajaran;
+
     // Form edit
     public $editSessionId;
     public $editSubjectTitle;
     public $editClassDate;
     public $editStartTime;
     public $editEndTime;
+    public $editJamPelajaran;
 
     // Store sessions
     public $sessions = [];
@@ -88,6 +92,7 @@ new #[Layout('layouts.app')] class extends Component {
                 'class_date' => $classDateTime,
                 'start_time' => $this->startTime,
                 'end_time' => $this->endTime,
+                'jam_pelajaran' => $this->jamPelajaran,
             ]);
 
             // Get all students in this class
@@ -120,7 +125,7 @@ new #[Layout('layouts.app')] class extends Component {
             }
 
             // Reset form fields
-            $this->reset(['subjectTitle', 'classDate', 'startTime', 'endTime']);
+            $this->reset(['subjectTitle', 'classDate', 'startTime', 'endTime', 'jamPelajaran']);
 
             // Reload sessions
             $this->loadSessions();
@@ -142,6 +147,7 @@ new #[Layout('layouts.app')] class extends Component {
         $this->editClassDate = \Carbon\Carbon::parse($session->class_date)->format('Y-m-d');
         $this->editStartTime = $session->start_time;
         $this->editEndTime = $session->end_time;
+        $this->editJamPelajaran = $session->jam_pelajaran;
     }
 
     // Update session
@@ -153,12 +159,14 @@ new #[Layout('layouts.app')] class extends Component {
                 'editClassDate' => 'required',
                 'editStartTime' => 'required',
                 'editEndTime' => 'required',
+                'editJamPelajaran' => 'required',
             ],
             [
                 'editSubjectTitle.required' => 'Judul pertemuan harus diisi',
                 'editClassDate.required' => 'Tanggal pertemuan harus diisi',
                 'editStartTime.required' => 'Jam mulai harus diisi',
                 'editEndTime.required' => 'Jam selesai harus diisi',
+                'editJamPelajaran.required' => 'Jam pelajaran harus diisi',
             ],
         );
 
@@ -173,18 +181,24 @@ new #[Layout('layouts.app')] class extends Component {
                 'class_date' => $classDateTime,
                 'start_time' => $this->editStartTime,
                 'end_time' => $this->editEndTime,
+                'jam_pelajaran' => $this->editJamPelajaran,
             ]);
 
             // Reset form fields
-            $this->reset(['editSessionId', 'editSubjectTitle', 'editClassDate', 'editStartTime', 'editEndTime']);
+            $this->reset(['editSessionId', 'editSubjectTitle', 'editClassDate', 'editStartTime', 'editEndTime', 'editJamPelajaran']);
 
             // Reload sessions
             $this->loadSessions();
 
-            // Show success message
-            session()->flash('success', 'Sesi pertemuan berhasil diperbarui');
+            $this->dispatch('show-toast', [
+                'type' => 'success',
+                'message' => 'Sesi pertemuan berhasil diedit',
+            ]);
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal memperbarui sesi pertemuan: ' . $e->getMessage());
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Gagal mengedit sesi: ' . $e->getMessage(),
+            ]);
         }
     }
 
@@ -282,28 +296,14 @@ new #[Layout('layouts.app')] class extends Component {
             $query->where('id', $this->classesId);
         })->count();
 
-        // Calculate total hours based on sessions
-        $totalHours = 0;
         $sessionsQuery = SubjectClassSession::where('subject_class_id', $this->subjectClassId)->whereNull('created_by_substitute');
 
-        foreach ($sessionsQuery->get() as $session) {
-            if ($session->start_time && $session->end_time) {
-                try {
-                    $start = \Carbon\Carbon::parse($session->start_time);
-                    $end = \Carbon\Carbon::parse($session->end_time);
-                    $totalHours += $start->diffInMinutes($end) / 60;
-                } catch (\Exception $e) {
-                    continue;
-                }
-            }
-        }
-
-        $totalHours = number_format($totalHours, 2, '.', '');
+        $totalJp = $sessionsQuery->sum('jam_pelajaran');
 
         return view('livewire.teacher.detail-subject-class', [
             'totalClasses' => $sessionsQuery->count(),
             'totalStudents' => $studentsCount,
-            'totalHours' => $totalHours,
+            'totalJp' => $totalJp,
             'sessions' => $this->sessions,
         ]);
     }
@@ -359,6 +359,7 @@ new #[Layout('layouts.app')] class extends Component {
             setTimeout(() => showToast = false, 3000)
          ">
 
+
         <div x-cloak x-show="showToast" x-transition.opacity
             :class="toastType === 'success' ? 'bg-white text-gray-500' : 'bg-red-100 text-red-700'"
             class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg p-4 shadow"
@@ -399,7 +400,7 @@ new #[Layout('layouts.app')] class extends Component {
         </div>
     </div>
 
-    <div class="mx-auto mt-10 max-w-7xl px-2 py-3 md:mt-0 md:px-4 lg:px-8">
+    <div class="mx-auto mt-12 max-w-7xl md:mt-0">
         <!-- Header Card -->
         <div class="flex w-full flex-col justify-between rounded-lg bg-white p-6 shadow-md md:flex-row md:items-center">
             <div
@@ -466,8 +467,8 @@ new #[Layout('layouts.app')] class extends Component {
                             </svg>
                         </div>
                         <div class="ml-4">
-                            <p class="font-inter text-sm text-gray-500">Jumlah Jam</p>
-                            <p class="font-inter text-xl font-medium text-gray-800">{{ $totalHours }}</p>
+                            <p class="font-inter text-sm text-gray-500">Total JP</p>
+                            <p class="font-inter text-xl font-medium text-gray-800">{{ $totalJp }}</p>
                         </div>
                     </div>
                 </div>
@@ -851,7 +852,7 @@ new #[Layout('layouts.app')] class extends Component {
                         <tbody class="divide-y divide-gray-200 bg-white">
                             @foreach ($sessions as $session)
                                 <tr class="hover:bg-gray-50">
-                                    <td class="whitespace-nowrap px-6 py-4">
+                                    <td class="px-6 py-4">
                                         <div class="flex items-center">
                                             <div class="h-10 w-10 flex-shrink-0">
                                                 <div
@@ -888,17 +889,7 @@ new #[Layout('layouts.app')] class extends Component {
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4">
                                         <div class="text-sm text-gray-900">
-                                            @php
-                                                if (!empty($session['start_time']) && !empty($session['end_time'])) {
-                                                    $start = \Carbon\Carbon::parse($session['start_time']);
-                                                    $end = \Carbon\Carbon::parse($session['end_time']);
-                                                    $durationHours = $start->diffInHours($end);
-                                                    $durationMinutes = $start->diffInMinutes($end) % 60;
-                                                    echo sprintf('%02d:%02d', $durationHours, $durationMinutes);
-                                                } else {
-                                                    echo 'N/A';
-                                                }
-                                            @endphp
+                                            {{ $session['jam_pelajaran'] }}
                                         </div>
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
@@ -1030,6 +1021,7 @@ new #[Layout('layouts.app')] class extends Component {
                                             </svg>
                                             {{ \Carbon\Carbon::parse($session['start_time'])->format('H:i') }} -
                                             {{ \Carbon\Carbon::parse($session['end_time'])->format('H:i') }}
+                                            ({{ $session['jam_pelajaran'] }} JP)
                                         </div>
                                     </div>
                                 </div>
@@ -1187,6 +1179,15 @@ new #[Layout('layouts.app')] class extends Component {
                                 @enderror
                             </div>
                         </div>
+                        <div class="mb-4">
+                            <label for="jamPelajaran" class="block text-sm font-medium text-gray-700">Jumlah
+                                JP</label>
+                            <input type="number" wire:model='jamPelajaran' placeholder="Atur Jumlah JP"
+                                class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            @error('jamPelajaran')
+                                <span class="mt-1 text-xs text-red-600">{{ $message }}</span>
+                            @enderror
+                        </div>
 
                         <!-- Dialog Footer -->
                         <div class="mt-6 flex items-center justify-end border-t border-gray-200 pt-4">
@@ -1280,6 +1281,18 @@ new #[Layout('layouts.app')] class extends Component {
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="editJamPelajaran" class="block text-sm font-medium text-gray-700">Jumlah
+                                JP</label>
+
+                            <input wire:model="editJamPelajaran" type="number"
+                                class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                placeholder="Masukan Jumlah Jam Pelajaran" />
+
+                            @error('editJamPelajaran')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Dialog Footer -->

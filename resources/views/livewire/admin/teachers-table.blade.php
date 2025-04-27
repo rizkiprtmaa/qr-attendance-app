@@ -15,6 +15,11 @@ new class extends Component {
     public $sortDirection = 'DESC';
     public $perPage = 5;
 
+    public $showMonthYearModal = false;
+    public $reportType = null; // 'teacher' atau 'staff'
+    public $reportMonth;
+    public $reportYear;
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -72,6 +77,35 @@ new class extends Component {
         ]);
     }
 
+    public function mount()
+    {
+        // Inisialisasi dengan bulan dan tahun saat ini
+        $this->reportMonth = date('m');
+        $this->reportYear = date('Y');
+    }
+
+    public function openReportModal($type)
+    {
+        $this->reportType = $type;
+        $this->showMonthYearModal = true;
+    }
+
+    public function downloadReport()
+    {
+        // Redirect ke route sesuai dengan tipe laporan
+        if ($this->reportType === 'teacher') {
+            return redirect()->route('teacher.attendance.report', [
+                'month' => $this->reportMonth,
+                'year' => $this->reportYear,
+            ]);
+        } elseif ($this->reportType === 'staff') {
+            return redirect()->route('staff.attendance.report', [
+                'month' => $this->reportMonth,
+                'year' => $this->reportYear,
+            ]);
+        }
+    }
+
     public function delete($id)
     {
         $teacher = Teacher::findOrFail($id);
@@ -122,6 +156,88 @@ new class extends Component {
             <span class="text-sm text-gray-600">Per halaman</span>
         </div>
     </div>
+
+    <div class="mb-4 flex justify-end">
+        <button wire:click="openReportModal('teacher')"
+            class="mr-3 inline-flex items-center rounded-md border border-green-600 bg-white px-4 py-2 text-sm font-medium text-green-600 shadow-sm hover:bg-green-600 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            Laporan Presensi Guru
+        </button>
+        <button wire:click="openReportModal('staff')"
+            class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            Laporan Presensi Karyawan
+        </button>
+    </div>
+
+    <!-- Modal untuk memilih bulan dan tahun -->
+    <div x-data="{ show: @entangle('showMonthYearModal') }" x-show="show" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-cloak>
+        <div x-show="show" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-90" @click.away="show = false"
+            class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 class="text-lg font-semibold text-gray-900">
+                {{ $reportType === 'teacher' ? 'Laporan Presensi Guru' : 'Laporan Presensi Karyawan' }}
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">Pilih bulan dan tahun untuk mengunduh laporan.</p>
+
+            <div class="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                    <label for="reportMonth" class="block text-sm font-medium text-gray-700">Bulan</label>
+                    <select wire:model="reportMonth" id="reportMonth"
+                        class="mt-1 block w-full rounded-md border-gray-300 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="1">Januari</option>
+                        <option value="2">Februari</option>
+                        <option value="3">Maret</option>
+                        <option value="4">April</option>
+                        <option value="5">Mei</option>
+                        <option value="6">Juni</option>
+                        <option value="7">Juli</option>
+                        <option value="8">Agustus</option>
+                        <option value="9">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="reportYear" class="block text-sm font-medium text-gray-700">Tahun</label>
+                    <select wire:model="reportYear" id="reportYear"
+                        class="mt-1 block w-full rounded-md border-gray-300 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        @for ($y = date('Y') - 2; $y <= date('Y'); $y++)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button @click="show = false"
+                    class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                    Batal
+                </button>
+                <button wire:click="downloadReport" @click="show = false"
+                    class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                    Unduh Laporan
+                </button>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- Teachers Table -->
     <div class="hidden overflow-hidden rounded-lg border border-gray-200 shadow md:block">

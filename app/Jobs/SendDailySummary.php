@@ -19,11 +19,14 @@ class SendDailySummary implements ShouldQueue
 
     protected $userId;
     protected $date;
+    public $tries = 3; // Jumlah percobaan jika gagal
+    public $backoff = [60, 180, 300]; // Waktu tunggu sebelum retry
 
     public function __construct($userId, $date)
     {
         $this->userId = $userId;
         $this->date = $date;
+        $this->delay(rand(30, 120)); // Random delay 30-120 detik
     }
 
     public function handle(WhatsAppService $whatsAppService): void
