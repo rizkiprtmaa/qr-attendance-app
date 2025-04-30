@@ -161,7 +161,21 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/reports/staff-attendance', [TeacherReportController::class, 'generateStaffAttendanceReport'])->name('staff.attendance.report');
 });
 
+Route::view('/admin/teachers', 'admin.subject-classes.index')
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('admin.teachers');
 
+Volt::route('/admin/teacher/{teacherId}/subjects', 'admin.teacher-subjects')
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('admin.teacher.subjects');
+
+Volt::route('/admin/subject/{subjectClassId}/sessions', 'admin.subject-sessions')
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('admin.subject.sessions');
+
+Volt::route('/admin/session/{sessionId}/attendance', 'admin.session-attendance')
+    ->middleware(['auth', 'verified', 'role:admin'])
+    ->name('admin.session.attendance');
 
 
 require __DIR__ . '/auth.php';
