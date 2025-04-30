@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'SMK Nurussalam - Sistem Presensi QR') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -44,6 +44,31 @@
                 left: auto !important;
             }
         }
+
+        /* Explicit styling untuk header responsif */
+        @media (max-width: 768px) {
+            .header-container {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .header-container {
+                padding-left: 2rem !important;
+                /* 8 dalam Tailwind */
+                padding-right: 2rem !important;
+                /* 8 dalam Tailwind */
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .header-container {
+                padding-left: 0 !important;
+                /* 8 dalam Tailwind */
+                padding-right: 0 !important;
+            }
+        }
     </style>
 
     @livewireStyles
@@ -54,20 +79,21 @@
     <div class="flex min-h-screen bg-gray-100">
         <livewire:layout.navigation />
 
-        <main class="flex-1 p-4 transition-all duration-300 ease-in-out md:ml-64">
+        <main class="flex-1 px-4 pt-4 transition-all duration-300 ease-in-out md:ml-64">
             @if (isset($header))
-                <header class="mt-10 w-full md:mt-0">
-                    <div class="mx-auto max-w-7xl px-0 py-3 lg:px-8">
+                <header class="mt-10 hidden w-full md:mt-0 md:block">
+                    <div class="header-container mx-auto max-w-7xl py-3">
                         {{ $header }}
                     </div>
                 </header>
             @endif
-            <div class="w-full">
+            <div class="content-container w-full px-0 md:px-8">
                 {{ $slot }}
             </div>
         </main>
     </div>
     @fluxScripts
+
 </body>
 @livewireScripts
 

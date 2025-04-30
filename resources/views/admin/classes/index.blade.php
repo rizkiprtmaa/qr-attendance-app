@@ -1,15 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-inter text-xl font-medium leading-tight text-gray-800">
-                {{ __('Manajemen Kelas dan Jurusan') }}
+        <div class="flex flex-col">
+            <h2 class="font-inter text-3xl font-semibold leading-tight text-gray-800">
+                {{ __('Kelas dan Jurusan') }}
             </h2>
+            <p class="mt-1 text-sm text-gray-500">Kelola data jurusan dan kelas untuk sekolah.</p>
 
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+    <div class="py-6">
+        <div class="mx-auto max-w-7xl">
             <livewire:admin.classes-organizer />
 
         </div>

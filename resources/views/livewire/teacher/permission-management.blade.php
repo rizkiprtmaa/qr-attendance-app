@@ -14,12 +14,22 @@ new class extends Component {
     public $permissionDate;
     public $description;
     public $attachment;
+    public $showPermissionDetailModal = false;
+    // Untuk satu izin
+    public $activePermission = null;
 
     public $permissions = [];
 
     public function mount()
     {
         $this->loadPermissions();
+    }
+
+    public function viewPermissionDetail($permissionId)
+    {
+        $this->activePermission = PermissionSubmission::with('user')->find($permissionId);
+        $this->adminNotes = $this->activePermission ? $this->activePermission->admin_notes : '';
+        $this->showPermissionDetailModal = true;
     }
 
     protected function rules()
@@ -111,22 +121,21 @@ new class extends Component {
 }; ?>
 
 <div x-data="{ modalCreateOpen: false }">
-    <div class="mb-6 pt-10 md:pt-0">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-medium text-gray-800">Pengajuan Izin</h2>
-            <button x-on:click="modalCreateOpen = true"
-                class="rounded-md bg-blue-600 px-4 py-2 font-inter text-sm text-white shadow-md hover:bg-blue-700">
-                Buat Pengajuan
-            </button>
-        </div>
-        <p class="text-sm text-gray-600">Ajukan izin/sakit untuk presensi QR dan kelas</p>
-    </div>
+
 
     <!-- Daftar Pengajuan Izin -->
-    <div class="mt-6 rounded-lg bg-white shadow">
+    <div
+        class="mt-10 flex flex-row items-center justify-between rounded-xl bg-gradient-to-r from-blue-200 to-blue-100 shadow md:mt-6">
         <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg font-medium leading-6 text-gray-900">Riwayat Pengajuan</h3>
-            <p class="mt-1 max-w-2xl text-sm text-gray-500">Daftar pengajuan izin yang telah Anda buat</p>
+            <h3 class="font-inter text-lg font-medium leading-6 text-gray-900">Riwayat Pengajuan</h3>
+            <p class="mt-1 max-w-2xl font-inter text-xs text-gray-500 md:text-sm">Daftar pengajuan izin yang telah Anda
+                buat</p>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
+            <button x-on:click="modalCreateOpen = true"
+                class="rounded-md bg-blue-600 px-4 py-3 font-inter text-xs text-white shadow-md hover:bg-blue-700 md:text-sm">
+                Ajukan
+            </button>
         </div>
 
 
@@ -212,6 +221,11 @@ new class extends Component {
                                             class="text-red-600 hover:text-red-900">
                                             Batalkan
                                         </button>
+                                    @else
+                                        <button wire:click="viewPermissionDetail({{ $permission->id }})"
+                                            class="text-blue-600 hover:text-blue-900">
+                                            Detail
+                                        </button>
                                     @endif
                                 </td>
                             </tr>
@@ -222,22 +236,36 @@ new class extends Component {
 
             <!-- Tampilan Card untuk Mobile -->
             <div class="md:hidden">
-                <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow">
+                <div class="mt-5 divide-y divide-gray-200 rounded-lg bg-white shadow-sm">
                     @foreach ($permissions as $permission)
-                        <div class="p-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex flex-row items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                        class="size-4">
-                                        <path fill-rule="evenodd"
-                                            d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    <span class="ml-2 pt-0.5 text-xs text-slate-900">
-                                        {{ \Carbon\Carbon::parse($permission->permission_date)->locale('id')->translatedFormat('d F Y') }}
-                                    </span>
-                                </div>
+                        <div class="flex flex-row items-center justify-between p-4 sm:px-6">
+                            <div class="flex flex-row items-center gap-0.5">
+                                @if ($permission->type === 'sakit')
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-yellow-500">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
+                                        </svg>
+                                    </div>
+                                @else
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-blue-500">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                        </svg>
+                                    </div>
+                                @endif
 
+                                <div class="ml-3">
+                                    <p class="font-medium text-slate-900">{{ ucfirst($permission->type) }}</p>
+                                    <p class="font-inter text-xs text-gray-500">
+                                        {{ \Carbon\Carbon::parse($permission->permission_date)->locale('id')->translatedFormat('d F Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
                                 <div>
                                     @if ($permission->status === 'approved')
                                         <span
@@ -256,17 +284,26 @@ new class extends Component {
                                         </span>
                                     @endif
                                 </div>
+                                <div class="flex flex-row gap-3">
+                                    @if ($permission->status === 'pending')
+                                        <button class="text-xs font-medium text-blue-600 hover:text-blue-900"
+                                            wire:click="viewPermissionDetail({{ $permission->id }})">Detail</button>
+                                        <button wire:click="cancelPermission({{ $permission->id }})"
+                                            wire:confirm="Yakin ingin membatalkan pengajuan ini?"
+                                            class="text-xs font-medium text-red-600 hover:text-red-900">
+                                            Batalkan
+                                        </button>
+                                    @else
+                                        <button class="text-xs font-medium text-blue-600 hover:text-blue-900"
+                                            wire:click="viewPermissionDetail({{ $permission->id }})">Detail</button>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="mt-3 flex flex-row items-center">
-                                <span
-                                    class="{{ $permission->type === 'sakit' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }} inline-flex rounded-full px-2 text-xs font-semibold leading-5">
-                                    {{ ucfirst($permission->type) }}
-                                </span>
-                            </div>
 
 
 
-                            <div class="mt-2 flex items-center justify-between">
+
+                            {{-- <div class="mt-2 flex items-center justify-between">
                                 <div>
                                     @if ($permission->attachment_path)
                                         <a href="{{ Storage::url($permission->attachment_path) }}" target="_blank"
@@ -277,21 +314,8 @@ new class extends Component {
                                         <span class="text-xs text-gray-500">Tanpa lampiran</span>
                                     @endif
                                 </div>
-                                <div class="flex flex-row gap-3">
-                                    @if ($permission->status === 'pending')
-                                        <button
-                                            class="text-xs font-medium text-blue-600 hover:text-blue-900">Detail</button>
-                                        <button wire:click="cancelPermission({{ $permission->id }})"
-                                            wire:confirm="Yakin ingin membatalkan pengajuan ini?"
-                                            class="text-xs font-medium text-red-600 hover:text-red-900">
-                                            Batalkan
-                                        </button>
-                                    @else
-                                        <button
-                                            class="text-xs font-medium text-blue-600 hover:text-blue-900">Detail</button>
-                                    @endif
-                                </div>
-                            </div>
+                                
+                            </div> --}}
                         </div>
                     @endforeach
                 </div>
@@ -390,6 +414,157 @@ new class extends Component {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permission Detail Modal -->
+    <div x-data="{ show: @entangle('showPermissionDetailModal') }" x-show="show" x-cloak class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+            <div x-show="show" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block w-full transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:align-middle">
+
+                <!-- Modal Header -->
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        @if ($activePermission && $activePermission->type === 'sakit')
+                            <div
+                                class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-yellow-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
+                                </svg>
+                            </div>
+                        @else
+                            <div
+                                class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-blue-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                </svg>
+                            </div>
+                        @endif
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900" id="modal-title">
+                                Detail Perizinan
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                                @if ($activePermission)
+                                    {{ ucfirst($activePermission->type) }} -
+                                    {{ \Carbon\Carbon::parse($activePermission->permission_date)->format('d M Y') }}
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                @if ($activePermission)
+                    <!-- Content -->
+                    <div class="bg-gray-50 px-4 py-4 sm:p-6">
+                        <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Nama Siswa</h4>
+                                <p class="mt-1 text-sm font-medium text-gray-900">
+                                    {{ $activePermission->user->name ?? '-' }}</p>
+                            </div>
+
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Status</h4>
+                                <div class="mt-1">
+                                    @if ($activePermission->status === 'approved')
+                                        <span
+                                            class="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
+                                            Disetujui
+                                        </span>
+                                    @elseif($activePermission->status === 'rejected')
+                                        <span
+                                            class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">
+                                            Ditolak
+                                        </span>
+                                    @else
+                                        <span
+                                            class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
+                                            Menunggu
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <h4 class="text-sm font-medium text-gray-500">Keterangan</h4>
+                                <p class="mt-1 text-sm text-gray-900">
+                                    {{ $activePermission->description ?: 'Tidak ada keterangan' }}
+                                </p>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <h4 class="text-sm font-medium text-gray-500">Lampiran</h4>
+                                <div class="mt-1">
+                                    @if ($activePermission->attachment_path)
+                                        <a href="{{ Storage::url($activePermission->attachment_path) }}"
+                                            target="_blank"
+                                            class="inline-flex items-center text-sm text-blue-600 hover:text-blue-900">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 h-4 w-4"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                            </svg>
+                                            Lihat Lampiran
+                                        </a>
+                                    @else
+                                        <p class="text-sm text-gray-500">Tidak ada lampiran</p>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <h4 class="text-sm font-medium text-gray-500">Catatan Admin</h4>
+                                <div class="mt-1">
+
+
+                                    <p class="text-sm text-gray-900">
+                                        {{ $activePermission->admin_notes ?: 'Tidak ada catatan' }}
+                                    </p>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="bg-white px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+
+
+                        <button @click="show = false" type="button"
+                            class="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto sm:text-sm">
+                            Tutup
+                        </button>
+
+                    </div>
+                @else
+                    <div class="bg-white px-4 py-5 text-center sm:p-6">
+                        <p class="text-sm text-gray-500">Data perizinan tidak ditemukan</p>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6">
+                        <button @click="show = false" type="button"
+                            class="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
+                            Tutup
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
