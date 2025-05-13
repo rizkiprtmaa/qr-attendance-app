@@ -4,20 +4,31 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Models\SystemSetting;
 
 class WhatsAppService
 {
     protected $apiUrl;
     protected $apiKey;
+    protected $isEnabled;
 
     public function __construct()
     {
         $this->apiUrl = config('services.fonnte.url', 'https://api.fonnte.com/send');
         $this->apiKey = config('services.fonnte.key');
+
+        // Periksa status aktif WhatsApp Gateway dari pengaturan sistem
+        $this->isEnabled = SystemSetting::get('whatsapp_gateway_enabled', true);
     }
 
     public function sendAttendanceNotification($phoneNumber, $studentName, $attendanceType, $attendanceTime, $status)
     {
+        // Jika WhatsApp Gateway dinonaktifkan, log pesan dan return false
+        if (!$this->isEnabled) {
+            Log::info("WhatsApp Gateway is disabled. Skipping notification for {$studentName}");
+            return false;
+        }
+
         try {
             $message = $this->composeAttendanceMessage($studentName, $attendanceType, $attendanceTime, $status);
 
@@ -80,6 +91,12 @@ class WhatsAppService
 
     public function sendDailySummary($phoneNumber, $studentName, $attendanceData)
     {
+        // Jika WhatsApp Gateway dinonaktifkan, log pesan dan return false
+        if (!$this->isEnabled) {
+            Log::info("WhatsApp Gateway is disabled. Skipping daily summary for {$studentName}");
+            return false;
+        }
+
         try {
             $message = $this->composeDailySummaryMessage($studentName, $attendanceData);
 
@@ -160,8 +177,6 @@ class WhatsAppService
         return $phoneNumber;
     }
 
-    // Fungsi lain (composeAttendanceMessage, composeDailySummaryMessage, getStatusText)
-    // tetap sama seperti implementasi sebelumnya
     protected function composeAttendanceMessage($studentName, $attendanceType, $attendanceTime, $status)
     {
         $statusText = $this->getStatusText($status);

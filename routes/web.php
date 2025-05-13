@@ -7,6 +7,7 @@ use App\Http\Controllers\UserCardController;
 use App\Http\Controllers\ClassReportController;
 use App\Http\Controllers\AttendancePdfController;
 use App\Http\Controllers\TeacherReportController;
+use App\Http\Controllers\TeacherAttendanceReportController;
 
 
 Route::view('/', 'welcome');
@@ -177,5 +178,18 @@ Volt::route('/admin/session/{sessionId}/attendance', 'admin.session-attendance')
     ->middleware(['auth', 'verified', 'role:admin'])
     ->name('admin.session.attendance');
 
+
+Volt::route('/automatic-schedules', 'admin.automatic-schedules-list')->middleware(['auth', 'verified', 'role:admin'])->name('admin.automatic-schedules');
+Volt::route('/automatic-schedules/{day}', 'admin.automatic-schedule-detail')->middleware(['auth', 'verified', 'role:admin'])->name('admin.automatic-schedule.detail');
+Volt::route('/system-settings', 'admin.system-settings')->middleware(['auth', 'verified', 'role:admin'])->name('admin.system-settings');
+
+// web.php
+Route::view('teacher-schedules', 'teacher.schedule.index')
+    ->middleware(['auth', 'verified', 'role:teacher'])
+    ->name('teacher.schedules');
+
+Route::get('/reports/daily-teacher-attendance', [TeacherAttendanceReportController::class, 'generateDailyReport'])
+    ->name('reports.daily-teacher-attendance')
+    ->middleware(['auth', 'role:admin']);
 
 require __DIR__ . '/auth.php';

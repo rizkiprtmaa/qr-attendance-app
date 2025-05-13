@@ -17,6 +17,9 @@ new class extends Component {
     public $majors;
     public $classesList;
 
+    // Tambahkan properti ini di class komponen Livewire
+    public $statusFilter = 'all'; // Nilai default 'all'
+
     #[On('scan-attendance')]
     public function mount()
     {
@@ -76,10 +79,26 @@ new class extends Component {
             });
         }
 
-        // Urutkan berdasarkan beberapa kriteria:
-        // 1. Status tidak_hadir akan berada di bawah (ORDER BY FIELD)
-        // 2. Jika check_in_time NULL, berikan nilai default yang besar
-        // 3. Akhirnya gunakan nama user sebagai kriteria terakhir
+        // Filter berdasarkan status kehadiran
+        if ($this->statusFilter !== 'all') {
+            if ($this->statusFilter === 'hadir') {
+                $query->where(function ($q) {
+                    $q->where('status', 'hadir')->orWhere('status', 'terlambat');
+                });
+            } elseif ($this->statusFilter === 'tidak_hadir') {
+                $query->where('status', 'tidak_hadir');
+            } elseif ($this->statusFilter === 'izin') {
+                $query->where('status', 'izin');
+            } elseif ($this->statusFilter === 'sakit') {
+                $query->where('status', 'sakit');
+            } elseif ($this->statusFilter === 'lengkap') {
+                // Ini akan diimplementasikan dengan logika groupBy nanti
+            } elseif ($this->statusFilter === 'tidak_lengkap') {
+                // Ini akan diimplementasikan dengan logika groupBy nanti
+            }
+        }
+
+        // Urutkan berdasarkan beberapa kriteria
         return $query->join('users', 'attendances.user_id', '=', 'users.id')->orderByRaw("FIELD(attendances.status, 'tidak_hadir') ASC")->orderByRaw("IFNULL(attendances.check_in_time, '23:59:59')")->orderBy('users.name')->select('attendances.*')->get()->groupBy('user_id');
     }
 
@@ -98,7 +117,7 @@ new class extends Component {
 
             <div class="mb-6 rounded-lg bg-white p-4 shadow">
                 <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div class="flex flex-row items-center gap-4 md:flex-row md:items-start">
+                    <div class="grid grid-cols-2 items-center gap-4 md:flex md:flex-row md:items-start">
                         {{-- Pilih Tanggal --}}
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Tanggal</label>
@@ -129,6 +148,19 @@ new class extends Component {
                                         </flux:select.option>
                                     @endif
                                 @endforeach
+                            </flux:select>
+                        </div>
+
+                        <!-- Tambahkan ini di bawah filter kelas -->
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
+                            <flux:select wire:model.live="statusFilter" placeholder="Pilih status...">
+                                <flux:select.option value="all">Semua Status</flux:select.option>
+                                <flux:select.option value="hadir">Hadir/Terlambat</flux:select.option>
+                                <flux:select.option value="tidak_hadir">Tidak Hadir</flux:select.option>
+                                <flux:select.option value="izin">Izin</flux:select.option>
+                                <flux:select.option value="sakit">Sakit</flux:select.option>
+
                             </flux:select>
                         </div>
                     </div>
@@ -636,6 +668,16 @@ new class extends Component {
                             d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
                     Scan QR
+                </a>
+                <!-- Tombol baru untuk laporan -->
+                <a href="{{ route('reports.daily-teacher-attendance', ['date' => $selectedDate]) }}"
+                    class="flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none">
+                    <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Unduh Laporan Guru
                 </a>
             </div>
         </div>

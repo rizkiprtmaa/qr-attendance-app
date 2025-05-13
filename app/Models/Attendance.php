@@ -1,12 +1,11 @@
 <?php
 
-
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 
 class Attendance extends Model
@@ -33,7 +32,15 @@ class Attendance extends Model
         // Cek apakah sudah ada presensi hari ini
         $existingAttendance = self::where('user_id', $userId)
             ->where('attendance_date', $now->toDateString())
+            ->where('type', $type)
             ->first();
+
+        // Jika sudah ada presensi untuk tipe tersebut, throw exception
+        if ($existingAttendance) {
+            throw new \Exception($type === 'datang'
+                ? 'Anda sudah melakukan presensi datang hari ini.'
+                : 'Anda sudah melakukan presensi pulang hari ini.');
+        }
 
         // Validasi urutan presensi
         if ($type === 'pulang') {
@@ -47,20 +54,8 @@ class Attendance extends Model
             }
         }
 
-        // Jika sudah ada presensi untuk tipe tertentu, throw exception
-        $typeExists = self::where('user_id', $userId)
-            ->where('attendance_date', $now->toDateString())
-            ->where('type', $type)
-            ->exists();
-
-        if ($typeExists) {
-            throw new \Exception($type === 'datang'
-                ? 'Anda sudah melakukan presensi datang hari ini.'
-                : 'Anda sudah melakukan presensi pulang hari ini.');
-        }
-
-        // Tentukan status
-        $status = self::determineAttendanceStatus($type, $now);
+        // Tentukan status berdasarkan jadwal (khusus untuk guru)
+        $status = self::determineAttendanceStatus($type, $now, $userId);
 
         // Buat presensi baru
         return self::create([
@@ -89,36 +84,70 @@ class Attendance extends Model
         return $status;
     }
 
-    protected static function determineAttendanceStatus($type, $checkTime = null)
+    protected static function determineAttendanceStatus($type, $checkTime = null, $userId = null)
     {
         if ($checkTime === null) {
             $checkTime = Carbon::now()->timezone('Asia/Jakarta');
         }
 
-        Log::info('Check Time: ' . $checkTime->toDateTimeString());
+        if ($userId === null && Auth::check()) {
+            $userId = Auth::id();
+        }
+
+        // Cek apakah user adalah guru
+        $user = User::find($userId);
+        $isTeacher = $user && $user->hasRole('teacher');
 
         if ($type === 'datang') {
-            /// Definisikan batas waktu presensi datang
+            if ($isTeacher) {
+                // Ambil jadwal guru untuk hari ini
+                $dayOfWeek = $checkTime->locale('id')->dayName; // Senin, Selasa, dst.
+                $schedule = TeacherSchedule::where('user_id', $userId)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->first();
+
+                if ($schedule) {
+                    // Jika ada jadwal, gunakan jam mulai jadwal sebagai batas keterlambatan
+                    // Berikan toleransi 15 menit (bisa disesuaikan)
+                    $scheduleStart = Carbon::parse($schedule->start_time);
+                    $toleranceTime = $scheduleStart;
+
+                    Log::info('Jadwal Guru Start: ' . $scheduleStart->toTimeString());
+                    Log::info('Tolerance Time: ' . $toleranceTime->toTimeString());
+
+                    // Bandingkan waktu absen dengan batas toleransi
+                    return $checkTime->lessThanOrEqualTo($toleranceTime) ? 'hadir' : 'terlambat';
+                }
+            }
+
+            // Default untuk non-guru atau jika guru tidak memiliki jadwal
             $jamAwalValid = $checkTime->copy()->setTime(0, 0, 0);
             $jamAkhirValid = $checkTime->copy()->setTime(7, 30, 0);
 
-            Log::info('Jam Awal Valid: ' . $jamAwalValid->toDateTimeString());
-            Log::info('Jam Akhir Valid: ' . $jamAkhirValid->toDateTimeString());
-
-            // Gunakan metode compare untuk validasi waktu
             return $checkTime->greaterThanOrEqualTo($jamAwalValid) &&
-                $checkTime->lessThan($jamAkhirValid)
-                ? 'hadir'
-                : 'terlambat';
+                $checkTime->lessThan($jamAkhirValid) ? 'hadir' : 'terlambat';
         }
 
         if ($type === 'pulang') {
-            // Jam pulang sebelum 14:00 dianggap pulang cepat
-            $jamPulangNormal = $checkTime->copy()->setTime(14, 0, 0);
+            if ($isTeacher) {
+                // Ambil jadwal guru untuk hari ini
+                $dayOfWeek = $checkTime->locale('id')->dayName;
+                $schedule = TeacherSchedule::where('user_id', $userId)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->first();
 
-            return $checkTime->lt($jamPulangNormal)
-                ? 'pulang_cepat'
-                : 'hadir';
+                if ($schedule) {
+                    // Jika ada jadwal, gunakan jam selesai jadwal sebagai patokan
+                    $scheduleEnd = Carbon::parse($schedule->end_time);
+
+                    // Jika pulang sebelum jam selesai jadwal, dianggap pulang cepat
+                    return $checkTime->lessThan($scheduleEnd) ? 'pulang_cepat' : 'hadir';
+                }
+            }
+
+            // Default untuk non-guru atau jika guru tidak memiliki jadwal
+            $jamPulangNormal = $checkTime->copy()->setTime(14, 0, 0);
+            return $checkTime->lt($jamPulangNormal) ? 'pulang_cepat' : 'hadir';
         }
 
         return 'hadir';

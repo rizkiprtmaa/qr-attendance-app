@@ -10,17 +10,16 @@ class Kernel extends ConsoleKernel
     /**
      * Define the application's command schedule.
      */
+    /**
+     * Define the application's command schedule.
+     */
     protected function schedule(Schedule $schedule): void
     {
-        // Untuk siswa - presensi datang
-        $schedule->command('attendance:mark-student-absent datang')
-            ->dailyAt('09:00')
-            ->timezone('Asia/Jakarta');
-
-        // Untuk siswa - presensi pulang
-        $schedule->command('attendance:mark-student-absent pulang')
-            ->dailyAt('15:00')
-            ->timezone('Asia/Jakarta');
+        // Generate automatic sessions every day at 5:00 AM
+        $schedule->command('app:generate-auto-sessions')
+            ->dailyAt('05:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/auto-sessions.log'));
     }
 
     /**

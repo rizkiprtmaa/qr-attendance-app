@@ -35,9 +35,38 @@ new class extends Component {
     // Tambahkan property untuk data yang dibutuhkan di modal
     public $subjectClassDetails = null;
 
+    // Delete Substitute
+    public $substitutionId;
+    public $subjectClassId;
+    public $teacherId;
+
     public function mount()
     {
         $this->startDate = now()->timezone('Asia/Jakarta')->format('Y-m-d');
+    }
+
+    public function deleteSubstitution()
+    {
+        try {
+            $substitutionRequest = SubstitutionRequest::findOrFail($this->substitutionId);
+
+            $substitutionRequest->delete();
+            $this->dispatch('show-toast', [
+                'type' => 'success',
+                'message' => 'Kelas berhasil dihapus',
+            ]);
+        } catch (\Exception $e) {
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Gagal menghapus kelas: ' . $e->getMessage(),
+            ]);
+            $this->dispatch('delete-failed');
+        }
+    }
+
+    public function confirmDeleteSubstitution($substitutionId)
+    {
+        $this->substitutionId = $substitutionId;
     }
 
     public function showRequestForm($userId, $subjectClassId)
@@ -129,7 +158,7 @@ new class extends Component {
 };
 ?>
 
-<div class="mt-12 md:mt-0">
+<div class="mt-12 md:mt-0" x-data="{ deleteSubstitutionModal: false }">
     <!-- Toast Notification Component -->
     <div x-data="{
         toastMessage: '',
@@ -362,11 +391,23 @@ new class extends Component {
                                             @endif
                                         </td>
                                         <td
-                                            class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                            class="flex flex-row items-center justify-end gap-2 whitespace-nowrap px-3 py-4 text-end text-sm font-medium sm:pr-6">
                                             <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
-                                                class="text-blue-600 hover:text-blue-900">
+                                                class="flex flex-row text-blue-600 hover:text-blue-900">
                                                 Kelola Kelas
                                             </a>
+                                            <button wire:click="confirmDeleteSubstitution({{ $request->id }})"
+                                                @click="deleteSubstitutionModal = true"
+                                                class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="mr-2 h-4 w-4 text-red-500">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                </svg>
+                                                Hapus
+                                            </button>
+
                                         </td>
                                     </tr>
                                 @empty
@@ -414,11 +455,22 @@ new class extends Component {
                                     </div>
                                 </div>
                             </div>
-                            <div class="border-t border-gray-200 bg-gray-50 px-4 py-3 text-right">
+                            <div
+                                class="flex flex-row justify-end gap-2 border-t border-gray-200 bg-gray-50 px-4 py-3 text-right">
                                 <a href="{{ route('substitute.class', $request->subjectClass->id) }}"
                                     class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                     Kelola Kelas
                                 </a>
+                                <button wire:click="confirmDeleteSubstitution({{ $request->id }})"
+                                    @click="deleteSubstitutionModal = true"
+                                    class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="mr-2 h-4 w-4 text-red-500">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                    Hapus
+                                </button>
                             </div>
                         </div>
                     @empty
@@ -541,6 +593,54 @@ new class extends Component {
                     </button>
                 </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete Confirmation -->
+    <div x-cloak x-show="deleteSubstitutionModal" x-transition.opacity.duration.200ms
+        x-on:delete-failed.window="deleteSubstitutionModal = false"
+        x-on:keydown.esc.window="deleteSubstitutionModal = false" x-on:click.self="deleteSubstitutionModal = false"
+        class="fixed inset-0 z-50 flex w-full items-center justify-center bg-black/50 p-4 pb-8 lg:p-8" role="dialog"
+        aria-modal="true" aria-labelledby="deleteSubstitutionModalTitle">
+        <!-- Modal Dialog -->
+        <div x-show="deleteSubstitutionModal" x-transition:enter="transition ease-out duration-200 delay-100"
+            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+            class="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
+            <div class="px-6 py-6">
+                <div class="flex items-center justify-center">
+                    <div
+                        class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900" id="deleteSubstitutionModalTitle">
+                        Hapus Sesi Pergantian
+                    </h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            Apakah Anda yakin ingin menghapus sesi ini? Semua data presensi siswa untuk mapel
+                            ini tetap ada, tetapi anda tidak bisa membuat pertemuan meskipun belum mencapai tenggat
+                            akhir. Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                </div>
+                <!-- Fixed button container -->
+                <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center sm:gap-3">
+                    <button type="button" @click="deleteSubstitutionModal = false"
+                        class="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto sm:text-sm">
+                        Batal
+                    </button>
+                    <button type="button" wire:click="deleteSubstitution" @click="deleteSubstitutionModal = false"
+                        class="inline-flex w-full justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm">
+                        Hapus
+                    </button>
+                </div>
             </div>
         </div>
     </div>
