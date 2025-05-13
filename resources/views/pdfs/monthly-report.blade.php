@@ -3,12 +3,19 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Laporan Kehadiran Kelas</title>
+    <title>Laporan Kehadiran Bulanan</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
             font-size: 11px;
             line-height: 1.3;
+        }
+
+        @font-face {
+            font-family: 'DejaVu Sans';
+            src: url('{{ public_path('fonts/dejavu-sans-webfont.ttf') }}');
+            font-weight: normal;
+            font-style: normal;
         }
 
         .container {
@@ -58,7 +65,7 @@
         th,
         td {
             border: 1px solid black;
-            padding: 3px;
+            padding: 2px;
             text-align: center;
             font-size: 10px;
         }
@@ -96,6 +103,36 @@
             top: 0;
             width: 60px;
         }
+
+        .status-hadir {
+            font-weight: bold;
+            font-size: 15px;
+            padding: none;
+        }
+
+        .status-terlambat {
+            color: #FF9800;
+            font-weight: bold;
+        }
+
+        .status-sakit {
+            color: #2196F3;
+            font-weight: bold;
+        }
+
+        .status-izin {
+            color: #9C27B0;
+            font-weight: bold;
+        }
+
+        .status-alpa {
+            color: #F44336;
+            font-weight: bold;
+        }
+
+        .weekend {
+            background-color: #dadada;
+        }
     </style>
 </head>
 
@@ -120,7 +157,7 @@
 
         <div class="border-bottom"></div>
 
-        <div class="header-text text-center">LAPORAN KEHADIRAN KELAS</div>
+        <div class="header-text text-center">LAPORAN KEHADIRAN BULANAN (QR)</div>
 
         <div class="info-section">
             <table style="width: 50%;">
@@ -154,6 +191,7 @@
                             style="width: 20px; {{ isset($isWeekend[$day]) && $isWeekend[$day] ? 'background-color: #dadada;' : '' }}">
                             {{ $day }}</th>
                     @endforeach
+
                     <th class="summary-col" style="width: 30px;">S</th>
                     <th class="summary-col" style="width: 30px;">I</th>
                     <th class="summary-col" style="width: 30px;">A</th>
@@ -168,15 +206,42 @@
                         @foreach ($days ?? [] as $day)
                             <td
                                 style="{{ isset($isWeekend[$day]) && $isWeekend[$day] ? 'background-color: #dadada;' : '' }}">
-                                {{ $student['days'][$day] ?? '' }}</td>
+                                @if (isset($student['days'][$day]))
+                                    @switch($student['days'][$day])
+                                        @case('H')
+                                            <span class="status-hadir">✓
+                                            </span>
+                                        @break
+
+                                        @case('T')
+                                            <span class="status-terlambat">T</span>
+                                        @break
+
+                                        @case('S')
+                                            <span class="status-sakit">S</span>
+                                        @break
+
+                                        @case('I')
+                                            <span class="status-izin">I</span>
+                                        @break
+
+                                        @case('A')
+                                            <span class="status-alpa">A</span>
+                                        @break
+
+                                        @default
+                                            {{ $student['days'][$day] }}
+                                    @endswitch
+                                @endif
+                            </td>
                         @endforeach
+
 
                         <td class="summary-col">{{ $student['summary']['sick'] ?? 0 }}</td>
                         <td class="summary-col">{{ $student['summary']['permission'] ?? 0 }}</td>
                         <td class="summary-col">{{ $student['summary']['absent'] ?? 0 }}</td>
 
-                        <td>{{ ($student['summary']['present'] ?? 0) + ($student['summary']['late'] ?? 0) }}
-                        </td>
+                        <td>{{ ($student['summary']['present'] ?? 0) + ($student['summary']['late'] ?? 0) }}</td>
                     </tr>
                 @endforeach
             </tbody>

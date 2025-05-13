@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="font-inter text-2xl font-medium leading-tight text-slate-900">
-                    {{ __('Presensi QR') }}
+                <h2 class="font-inter text-3xl font-semibold leading-tight text-slate-900">
+                    {{ __('Rekap Presensi QR') }}
                 </h2>
 
             </div>
@@ -15,8 +15,8 @@
 
 
 
-    <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+    <div class="py-6">
+        <div class="mx-auto max-w-7xl">
             <div>
                 <livewire:admin.qr-attendance-overview />
             </div>

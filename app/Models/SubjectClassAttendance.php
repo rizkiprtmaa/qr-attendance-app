@@ -36,6 +36,7 @@ class SubjectClassAttendance extends Model
         return $this->belongsTo(Student::class);
     }
 
+
     /**
      * Scope a query to filter by status
      */

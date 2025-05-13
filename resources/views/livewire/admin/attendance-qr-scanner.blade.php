@@ -4,6 +4,7 @@ use Livewire\Volt\Component;
 use App\Models\User;
 use App\Models\Attendance;
 use Carbon\Carbon;
+use Livewire\Attributes\On;
 
 new class extends Component {
     public $scan_type = 'datang';
@@ -12,16 +13,112 @@ new class extends Component {
 
     public $scanned_user = null;
     public $show_confirmation = false;
+
+    // Tambahan untuk menampilkan daftar user terbaru dan jumlah kehadiran
+    public $recentAttendances = [];
+    public $totalAttendanceToday = 0;
+    public $welcomeMessage = '';
+
+    public $refreshInterval;
+
     public $listeners = [
         'process-scan' => 'processScan',
+        'process-manual-scan' => 'processManualScan',
         'confirm-attendance' => 'confirmAttendance',
         'cancel-attendance' => 'cancelAttendance',
     ];
+
+    public function mount()
+    {
+        $this->loadRecentAttendances();
+        $this->loadTotalAttendance();
+        $this->setWelcomeMessage();
+
+        // Refresh data setiap 15 detik
+        $this->refreshInterval = 15000;
+    }
+
+    public function loadRecentAttendances()
+    {
+        $today = Carbon::now()->timezone('Asia/Jakarta')->toDateString();
+
+        // Mengambil 10 presensi terbaru untuk tipe scan yang sedang aktif
+        $this->recentAttendances = Attendance::with('user')
+            ->where('attendance_date', $today)
+            ->where('type', $this->scan_type)
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function ($attendance) {
+                // Tentukan display status berdasarkan role user
+                $displayStatus = Attendance::getDisplayStatus($attendance->status, $attendance->user_id);
+
+                return [
+                    'name' => $attendance->user->name,
+                    'time' => Carbon::parse($attendance->check_in_time)->format('H:i'),
+                    'status' => $displayStatus, // Gunakan status yang sudah diproses
+                    'avatar' => !empty($attendance->user->profile_photo_path) ? asset('storage/' . $attendance->user->profile_photo_path) : 'https://ui-avatars.com/api/?name=' . urlencode($attendance->user->name) . '&color=7F9CF5&background=EBF4FF',
+                ];
+            });
+    }
+
+    public function loadTotalAttendance()
+    {
+        $today = Carbon::now()->timezone('Asia/Jakarta')->toDateString();
+
+        // Menghitung total presensi hari ini
+        $this->totalAttendanceToday = Attendance::where('attendance_date', $today)->where('type', $this->scan_type)->count();
+    }
+
+    public function setWelcomeMessage()
+    {
+        $now = Carbon::now()->timezone('Asia/Jakarta');
+        $hour = $now->hour;
+
+        // Tentukan salam berdasarkan waktu
+        $greeting = '';
+        if ($hour >= 0 && $hour < 4) {
+            $greeting = 'Selamat dini hari';
+        } elseif ($hour >= 4 && $hour < 11) {
+            $greeting = 'Selamat Pagi';
+        } elseif ($hour >= 11 && $hour < 15) {
+            $greeting = 'Selamat Siang';
+        } elseif ($hour >= 15 && $hour < 18) {
+            $greeting = 'Selamat Sore';
+        } else {
+            $greeting = 'Selamat Malam';
+        }
+
+        // Gunakan data yang sudah di-load sebelumnya
+        if (!empty($this->recentAttendances) && $this->scan_type === 'datang') {
+            // Ambil nama dari presensi terbaru yang sudah di-load
+            $latestUserName = $this->recentAttendances[0]['name'] ?? null;
+            $this->welcomeMessage = $latestUserName ? "{$greeting}, {$latestUserName}" : $greeting;
+        } elseif (!empty($this->recentAttendances) && $this->scan_type === 'pulang') {
+            $latestUserName = $this->recentAttendances[0]['name'] ?? null;
+            $this->welcomeMessage = $latestUserName ? "Selamat Pulang, {$latestUserName}" : 'Selamat Pulang';
+        } else {
+            // Fallback jika tidak ada data
+            $this->welcomeMessage = $this->scan_type === 'datang' ? $greeting : 'Selamat Pulang';
+        }
+    }
+
+    public function refreshData()
+    {
+        $this->loadRecentAttendances();
+        $this->loadTotalAttendance();
+        // Kirim event untuk restart scanner
+        $this->dispatch('restart-scanner');
+    }
 
     public function changeScanType($type)
     {
         $this->scan_type = $type;
         $this->reset('scan_message', 'scan_status', 'scanned_user', 'show_confirmation');
+        $this->setWelcomeMessage();
+        $this->loadRecentAttendances();
+        $this->loadTotalAttendance();
+
         // Kirim event untuk restart scanner
         $this->dispatch('restart-scanner');
     }
@@ -33,6 +130,82 @@ new class extends Component {
         $this->show_confirmation = false;
     }
 
+    public function processManualScan($token)
+    {
+        // Validasi token
+        $user = User::where('qr_token', $token)->first();
+
+        if (!$user) {
+            // Gunakan sistem toast untuk error
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'QR Code tidak valid',
+            ]);
+            // Kirim event untuk restart scanner
+            $this->dispatch('restart-scanner');
+            return;
+        }
+
+        // Validasi presensi sebelumnya
+        try {
+            $now = Carbon::now()->timezone('Asia/Jakarta');
+            $today = $now->toDateString();
+
+            $existingAttendance = Attendance::where('user_id', $user->id)->where('attendance_date', $today)->where('type', $this->scan_type)->first();
+
+            if ($existingAttendance) {
+                $message = $this->scan_type === 'datang' ? 'Anda sudah melakukan presensi datang hari ini.' : 'Anda sudah melakukan presensi pulang hari ini.';
+
+                $this->dispatch('show-toast', [
+                    'type' => 'error',
+                    'message' => $message,
+                ]);
+                // Kirim event untuk restart scanner
+                $this->dispatch('restart-scanner');
+                return;
+            }
+
+            // Untuk presensi pulang, pastikan sudah presensi datang
+            if ($this->scan_type === 'pulang') {
+                $checkIn = Attendance::where('user_id', $user->id)->where('attendance_date', $today)->where('type', 'datang')->first();
+
+                if (!$checkIn) {
+                    $this->dispatch('show-toast', [
+                        'type' => 'error',
+                        'message' => 'Anda belum melakukan presensi datang hari ini.',
+                    ]);
+                    // Kirim event untuk restart scanner
+                    $this->dispatch('restart-scanner');
+                    return;
+                }
+            }
+
+            // Tentukan status presensi
+            $status = Attendance::determineAttendanceStatus($this->scan_type, $now);
+
+            // Tampilkan konfirmasi
+            $this->scanned_user = $user;
+            $this->confirmAttendance();
+
+            // Persiapkan pesan konfirmasi dengan detail status
+            $statusMessage = match ($status) {
+                'terlambat' => 'Anda terlambat',
+                'pulang_cepat' => 'Anda pulang lebih cepat',
+                default => 'Presensi dalam waktu normal',
+            };
+
+            $this->scan_message = $this->scan_type === 'datang' ? "Konfirmasi presensi datang untuk {$user->name}. Status: {$statusMessage}" : "Konfirmasi presensi pulang untuk {$user->name}. Status: {$statusMessage}";
+
+            $this->scan_status = 'confirmation';
+
+            // Tidak perlu restart scanner di sini karena sedang menunggu konfirmasi
+        } catch (\Exception $e) {
+            $this->dispatch('show-toast', [
+                'type' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            ]);
+        }
+    }
     public function processScan($token)
     {
         // Validasi token
@@ -88,7 +261,7 @@ new class extends Component {
 
             // Tampilkan konfirmasi
             $this->scanned_user = $user;
-            $this->show_confirmation = true;
+            $this->confirmAttendance();
 
             // Persiapkan pesan konfirmasi dengan detail status
             $statusMessage = match ($status) {
@@ -120,6 +293,7 @@ new class extends Component {
                 'message' => 'Tidak ada data yang dikonfirmasi',
             ]);
             $this->show_confirmation = false;
+
             // Kirim event untuk restart scanner
             $this->dispatch('restart-scanner');
             return;
@@ -140,6 +314,11 @@ new class extends Component {
 
             $this->show_confirmation = false;
             $this->scanned_user = null;
+
+            // Refresh data presensi terbaru setelah berhasil
+            $this->loadRecentAttendances();
+            $this->loadTotalAttendance();
+            $this->setWelcomeMessage(); // Update welcome message setelah scan berhasil
 
             // Kirim event untuk restart scanner
             $this->dispatch('restart-scanner');
@@ -172,15 +351,19 @@ new class extends Component {
         return view('livewire.admin.attendance-qr-scanner', [
             'show_confirmation' => $this->show_confirmation,
             'scanned_user' => $this->scanned_user,
+            'recentAttendances' => $this->recentAttendances,
+            'totalAttendanceToday' => $this->totalAttendanceToday,
+            'welcomeMessage' => $this->welcomeMessage,
         ]);
     }
 };
 
 ?>
 
-<div x-data="qrScanner()" x-init="initializeLibrary()" class="flex min-h-[80vh] flex-col items-center justify-center">
+<div x-data="qrScanner()" x-init="initializeLibrary();
+startScanning();" class="flex min-h-[80vh] w-full flex-col items-center">
     <!-- Tab datang/pulang -->
-    <div class="flex w-full justify-center">
+    <div class="mt-5 flex w-full justify-center">
         <nav
             class="flex w-full max-w-xs items-center space-x-1 overflow-x-auto rounded-xl bg-gray-500/5 p-1 text-sm text-gray-600 dark:bg-gray-500/20 rtl:space-x-reverse">
             <button role="tab" type="button" wire:click="changeScanType('datang')"
@@ -197,81 +380,212 @@ new class extends Component {
         </nav>
     </div>
 
-    <div class="w-full max-w-md overflow-hidden px-4 sm:px-0">
-        <div class="p-4 sm:p-8">
-            <h2 class="mb-4 text-center font-inter text-2xl font-medium">
-                Presensi {{ $scan_type == 'datang' ? 'Datang' : 'Pulang' }}
-            </h2>
+    <div class="w-full max-w-7xl overflow-hidden px-4 sm:px-6 lg:px-8">
+        <div class="py-6">
+            <!-- Ucapan Selamat Datang dan Statistik -->
+            <div
+                class="mb-6 rounded-lg bg-gradient-to-bl from-cyan-300 via-sky-300 to-blue-600 p-8 text-white shadow-md">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div>
+                        <h2 class="font-inter text-3xl font-semibold">{{ $welcomeMessage }}</h2>
+                        <p class="mt-2 font-inter text-blue-100">
+                            {{ $scan_type == 'datang' ? 'Silahkan scan QR code untuk melakukan presensi kehadiran' : 'Silahkan scan QR code untuk melakukan presensi kepulangan' }}
+                        </p>
 
-            <!-- Modal Konfirmasi -->
-            @if ($show_confirmation && $scanned_user)
-                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-                    <div class="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-xl">
-                        <h3 class="mb-4 text-xl font-bold">Konfirmasi Presensi</h3>
+                        <div class="mt-4">
+                            <div class="flex items-center">
 
-                        <div class="mb-4">
-                            <p class="text-lg">
-                                {{ $scan_type === 'datang' ? 'Presensi Datang' : 'Presensi Pulang' }}
-                            </p>
-                            <p class="font-semibold text-gray-700">{{ $scanned_user->name }}</p>
-                            <p class="text-sm text-gray-600">{{ $scan_message }}</p>
+                                {{-- <div class="ml-4 rounded-md bg-white p-4 shadow-md">
+                                    <p class="font-inter text-lg font-medium text-slate-900">Total
+                                        {{ $scan_type == 'datang' ? 'Kehadiran' : 'Kepulangan' }}</p>
+                                    <p class="font-inter text-3xl font-semibold text-slate-900">
+                                        {{ $totalAttendanceToday }}</p>
+                                </div> --}}
+                                <div class="">
+
+                                    <div
+                                        class="flex flex-row items-center gap-2 rounded-2xl bg-white/20 p-6 shadow-sm backdrop-blur-lg">
+                                        <div class="flex h-10 w-10 items-center justify-center">
+                                            <img src="{{ asset('images/logo-sekolah.png') }}" alt=""
+                                                class="h-7 w-7 object-cover md:h-10 md:w-10">
+                                        </div>
+                                        <p class="font-inter text-sm font-semibold md:text-xl">Sistem Presensi Digital
+                                            SMK
+                                            Nurussalam
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </div>
 
-                        <div class="flex justify-center space-x-4">
-                            <button wire:click="confirmAttendance"
-                                class="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600">
-                                Konfirmasi
-                            </button>
-                            <button wire:click="cancelAttendance"
-                                class="rounded bg-red-500 px-4 py-2 text-white transition hover:bg-red-600">
-                                Batalkan
-                            </button>
+                    <div class="hidden md:block">
+                        <div class="flex h-full w-full flex-row items-center justify-end">
+                            <div class="flex items-center gap-4">
+                                <div class="rounded-2xl bg-white/20 p-6 shadow-sm backdrop-blur-lg">
+                                    <p class="font-inter text-lg font-medium text-white">Total
+                                        {{ $scan_type == 'datang' ? 'Kehadiran' : 'Kepulangan' }}</p>
+                                    <p class="font-inter text-3xl font-bold text-white">{{ $totalAttendanceToday }}</p>
+                                </div>
+
+                                <div x-data="{ time: new Date().toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) }" x-init="setInterval(() => time = new Date().toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }), 1000)"
+                                    class="rounded-2xl bg-white/20 p-6 shadow-sm backdrop-blur-lg">
+                                    <p class="font-inter text-lg font-medium text-white">Waktu Sekarang</p>
+                                    <p class="font-inter text-3xl font-bold text-white" x-text="time"></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            @endif
-
-            <!-- Area Scanner -->
-            <div x-show="!isScanning" class="w-full">
-                <button @click="startScanning()"
-                    class="w-full rounded-[10px] bg-blue-600 py-3 text-sm font-medium text-white transition hover:bg-blue-700">
-                    Buka Scanner QR
-                </button>
             </div>
 
-            <!-- Kontainer Scanner -->
-            <div x-cloak x-show="isScanning" x-transition
-                class="relative flex min-h-max w-full max-w-full flex-col gap-5 overflow-hidden">
+            <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-5 md:gap-8">
+                <!-- Scanner dan Konfirmasi -->
+                <div class="md:col-span-2">
+                    <div class="rounded-lg bg-white p-6 shadow-md">
+                        <h2 class="mb-4 text-center font-inter text-2xl font-medium text-gray-800">
+                            Presensi {{ $scan_type == 'datang' ? 'Datang' : 'Pulang' }}
+                        </h2>
 
-                <!-- Memperbaiki QR Scanner dengan ukuran responsif -->
-                <div id="reader-container" class="relative mx-auto mb-4 w-full"
-                    style="aspect-ratio: 1/1; max-width: 550px; width: 100%; 
-                            @media (min-width: 768px) { max-width: 700px; }">
-                    <div id="reader"
-                        class="absolute inset-0 overflow-hidden rounded-lg border-2 border-gray-300 bg-gray-100 object-contain">
+                        <!-- Area Scanner -->
+
+
+                        <!-- Kontainer Scanner -->
+                        <div class="relative flex min-h-max w-full max-w-full flex-col gap-5 overflow-hidden">
+
+                            <!-- Memperbaiki QR Scanner dengan ukuran responsif -->
+                            <div id="reader-container" class="relative mx-auto mb-4 w-full max-w-[550px]">
+                                <div class="relative" style="aspect-ratio: 1/1;">
+                                    <div id="reader"
+                                        class="absolute inset-0 overflow-hidden rounded-lg border-2 border-gray-300 bg-gray-100">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Camera selector - Perbaiki tampilan dropdown -->
+                            <div x-show="cameras.length > 1" class="w-full max-w-[350px] md:max-w-[500px]">
+                                <select id="camera-select" x-model="selectedCamera" @change="handleCameraChange()"
+                                    class="w-full rounded-lg border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <template x-for="camera in cameras" :key="camera.id">
+                                        <option :value="camera.id"
+                                            x-text="camera.label || `Camera ${(cameras.indexOf(camera) + 1)}`"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Add this somewhere in your HTML, preferably at the top of your component -->
+                        <input type="text" id="external-scanner-input" class="sr-only" autocomplete="off"
+                            x-model="manualInput"
+                            @keydown.enter.prevent="processExternalScan(manualInput); manualInput = ''" />
+
+
                     </div>
                 </div>
 
-                <!-- Camera selector - Perbaiki tampilan dropdown -->
-                <div x-show="cameras.length > 1" class="w-full max-w-[350px] md:max-w-[500px]">
-                    <select id="camera-select" x-model="selectedCamera" @change="handleCameraChange()"
-                        class="w-full rounded-lg border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <template x-for="camera in cameras" :key="camera.id">
-                            <option :value="camera.id"
-                                x-text="camera.label || `Camera ${(cameras.indexOf(camera) + 1)}`"></option>
-                        </template>
-                    </select>
-                </div>
-            </div>
+                <!-- Presensi Terbaru -->
+                <div class="md:col-span-3">
+                    <div class="max-h-[38rem] overflow-y-scroll rounded-lg bg-white p-6 shadow-md">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h2 class="text-lg font-semibold text-gray-800">Presensi Terbaru</h2>
+                            <button wire:click="refreshData" class="text-blue-600 hover:text-blue-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                        </div>
 
-            <div x-cloak x-show="isScanning" class="mt-3 flex space-x-4">
-                <button @click="stopScanning()"
-                    class="flex-1 rounded-[10px] bg-gray-600 py-3 text-sm font-medium text-white transition hover:bg-gray-700">
-                    Tutup Scanner QR
-                </button>
+                        @if (count($recentAttendances) > 0)
+                            <div class="space-y-4">
+                                @foreach ($recentAttendances as $attendance)
+                                    <div
+                                        class="flex items-center rounded-lg border border-gray-100 bg-gray-50 p-3 shadow-sm transition hover:bg-gray-100">
+                                        <div class="flex-shrink-0">
+                                            <img src="{{ $attendance['avatar'] }}" alt="{{ $attendance['name'] }}"
+                                                class="h-10 w-10 rounded-full object-cover">
+                                        </div>
+                                        <div class="ml-3 min-w-0 flex-1">
+                                            <p class="truncate text-sm font-medium text-gray-900">
+                                                {{ $attendance['name'] }}</p>
+                                            <p class="truncate text-xs text-gray-500">{{ $attendance['time'] }}</p>
+                                        </div>
+                                        <div class="ml-auto">
+                                            @if ($attendance['status'] === 'hadir')
+                                                <span
+                                                    class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                                                    Tepat Waktu
+                                                </span>
+                                            @elseif($attendance['status'] === 'terlambat')
+                                                <span
+                                                    class="inline-flex items-center rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700">
+                                                    Terlambat
+                                                </span>
+                                            @elseif($attendance['status'] === 'pulang_cepat')
+                                                <span
+                                                    class="inline-flex items-center rounded-full bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
+                                                    Pulang Cepat
+                                                </span>
+                                            @else
+                                                <span
+                                                    class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                                                    {{ ucfirst($attendance['status']) }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <div class="mt-4 text-center">
+                                <p class="text-sm text-gray-500">Menampilkan {{ count($recentAttendances) }} data
+                                    terbaru</p>
+                            </div>
+                        @else
+                            <div class="flex flex-col items-center justify-center py-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none"
+                                    ewBox="0 0 24 24" stroke="currentCofill="none"lor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                <p class="mt-2 text-sm font-medium text-gray-900">Belum ada presensi</p>
+                                <p class="mt-1 text-xs text-gray-500">Data presensi terbaru akan muncul di sini</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Modal Konfirmasi -->
+    @if ($show_confirmation && $scanned_user)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+            <div class="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-xl">
+                <h3 class="mb-4 text-xl font-bold">Konfirmasi Presensi</h3>
+
+                <div class="mb-4">
+                    <p class="text-lg">
+                        {{ $scan_type === 'datang' ? 'Presensi Datang' : 'Presensi Pulang' }}
+                    </p>
+                    <p class="font-semibold text-gray-700">{{ $scanned_user->name }}</p>
+                    <p class="text-sm text-gray-600">{{ $scan_message }}</p>
+                </div>
+
+                <div class="flex justify-center space-x-4">
+                    <button wire:click="confirmAttendance"
+                        class="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600">
+                        Konfirmasi
+                    </button>
+                    <button wire:click="cancelAttendance"
+                        class="rounded bg-red-500 px-4 py-2 text-white transition hover:bg-red-600">
+                        Batalkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Toast Notification Component -->
     <div x-data="{
@@ -322,6 +636,9 @@ new class extends Component {
         </div>
     </div>
 
+    <!-- Auto Refresh Component (Polling) -->
+    <div wire:poll.{{ $refreshInterval }}ms="loadRecentAttendances; loadTotalAttendance"></div>
+
     <script>
         function qrScanner() {
             return {
@@ -331,6 +648,7 @@ new class extends Component {
                 cameras: [],
                 selectedCamera: null,
                 lastSelectedCamera: null,
+                manualInput: '', // Add this for manual/external scanner input
 
                 initializeLibrary() {
                     if (typeof Html5Qrcode === 'undefined') {
@@ -366,6 +684,36 @@ new class extends Component {
                             }
                         }, 500);
                     });
+
+                    document.addEventListener('keydown', (e) => {
+                        // Ignore if it's a modifier key or function key
+                        if (e.altKey || e.ctrlKey || e.metaKey || e.key.length > 1) {
+                            if (e.key === 'Enter' && this.manualInput) {
+                                // Process the complete barcode when Enter is pressed
+                                e.preventDefault();
+                                console.log('External scanner input:', this.manualInput);
+                                this.processExternalScan(this.manualInput);
+                                this.manualInput = ''; // Reset for next scan
+                            }
+                            return;
+                        }
+
+                        // Accumulate printable characters
+                        if (e.key.match(/^[a-zA-Z0-9-_]+$/)) {
+                            this.manualInput += e.key;
+                        }
+                    });
+                },
+
+                // Add this new method to handle external scanner input
+                processExternalScan(scannedText) {
+                    if (scannedText && scannedText.length > 0) {
+                        console.log('Processing external scan:', scannedText);
+                        // Send to Livewire component
+                        Livewire.dispatch('process-manual-scan', {
+                            token: scannedText
+                        });
+                    }
                 },
 
                 loadAvailableCameras() {
@@ -394,6 +742,7 @@ new class extends Component {
                                 // Simpan pilihan awal
                                 this.lastSelectedCamera = this.selectedCamera;
                                 console.log('Selected camera:', this.selectedCamera);
+                                this.startScanning();
                             }
                         })
                         .catch(err => {
@@ -469,7 +818,8 @@ new class extends Component {
                                 formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
                                 experimentalFeatures: {
                                     useBarCodeDetectorIfSupported: true
-                                }
+                                },
+
                             };
 
                             this.scanner = new Html5Qrcode("reader", config);
@@ -495,7 +845,8 @@ new class extends Component {
                             // Fungsi QR Box
                             const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
                                 // Ukuran lebih kecil dari container
-                                const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.75;
+                                const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.80;
+                                console.log(viewfinderWidth, viewfinderHeight, size);
                                 return {
                                     width: size,
                                     height: size
@@ -509,17 +860,29 @@ new class extends Component {
                                 aspectRatio: 1.0, // Rasio 1:1 agar persegi sempurna
                                 disableFlip: false, // Izinkan flip jika diperlukan
                                 videoConstraints: { // Konfigurasi video khusus
+                                    // Tingkatkan resolusi kamera
                                     width: {
-                                        ideal: Math.max(containerWidth, containerHeight)
+                                        min: 640,
+                                        ideal: 1280,
+                                        max: 1920
                                     },
                                     height: {
-                                        ideal: Math.max(containerWidth, containerHeight)
+                                        min: 480,
+                                        ideal: 720,
+                                        max: 1080
                                     },
                                     deviceId: cameraId ? {
                                         exact: cameraId
                                     } : undefined,
                                     facingMode: {
                                         ideal: "environment"
+                                    },
+
+                                    frameRate: {
+                                        ideal: 30
+                                    },
+                                    focusMode: {
+                                        ideal: "continuous"
                                     }
                                 }
                             };
@@ -555,18 +918,6 @@ new class extends Component {
                                     `Error: ${err.message || "Tidak dapat mengakses kamera"}`;
                                 this.isScanning = false;
                             });
-
-                            // Fix styling issues for video element
-                            setTimeout(() => {
-                                const videoElement = readerElement.querySelector('video');
-                                if (videoElement) {
-                                    videoElement.style.objectFit = 'cover';
-                                    videoElement.style.borderRadius = '0.375rem';
-                                    videoElement.style.width = '100%';
-                                    videoElement.style.height = '100%';
-                                }
-                            }, 500);
-
                         } catch (e) {
                             console.error('Exception in startScanning:', e);
                             this.debugMessage = `Eksepsi: ${e.message}`;
@@ -577,4 +928,7 @@ new class extends Component {
             };
         }
     </script>
+
+    <!-- Add this just before the closing </div> of your component -->
+
 </div>

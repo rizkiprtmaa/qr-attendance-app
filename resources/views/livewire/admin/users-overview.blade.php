@@ -24,9 +24,9 @@ new class extends Component {
 ?>
 
 <div class="overflow-hidden">
-    <div class="grid max-w-full grid-cols-1 gap-4 md:grid-cols-3">
+    <div class="grid max-w-full grid-cols-2 gap-4 md:grid-cols-3">
         <div class="flex w-auto flex-row gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md">
-            <div class="flex items-center rounded-full bg-blue-500 px-4 py-2">
+            <div class="hidden items-center rounded-full bg-blue-500 px-4 py-2 md:flex">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                     stroke="currentColor" class="size-6 text-white">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -34,15 +34,15 @@ new class extends Component {
                 </svg>
             </div>
             <div class="gap-5">
-                <p class="font-inter text-xl font-medium">Jumlah Pengguna</p>
-                <p class="font-body">{{ $users }}</p>
+                <p class="font-inter text-sm">Jumlah Pengguna</p>
+                <p class="font-inter text-2xl font-medium">{{ $users }}</p>
             </div>
 
 
 
         </div>
         <div class="flex flex-row gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md">
-            <div class="flex items-center rounded-full bg-blue-500 px-4 py-2">
+            <div class="hidden items-center rounded-full bg-blue-500 px-4 py-2 md:flex">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                     stroke="currentColor" class="size-6 text-white">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -52,15 +52,15 @@ new class extends Component {
 
             </div>
             <div class="gap-5">
-                <p class="font-inter text-xl font-medium">Jumlah Guru</p>
-                <p class="font-body">{{ $teachers }}</p>
+                <p class="font-inter text-sm">Jumlah Guru</p>
+                <p class="font-inter text-2xl font-medium">{{ $teachers }}</p>
             </div>
 
 
 
         </div>
         <div class="flex flex-row gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md">
-            <div class="flex items-center rounded-full bg-blue-500 px-4 py-2">
+            <div class="hidden items-center rounded-full bg-blue-500 px-4 py-2 md:flex">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                     stroke="currentColor" class="size-6 text-white">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -70,8 +70,8 @@ new class extends Component {
 
             </div>
             <div class="gap-5">
-                <p class="font-inter text-xl font-medium">Jumlah Siswa</p>
-                <p class="font-body">{{ $students_count }}</p>
+                <p class="font-inter text-sm">Jumlah Siswa</p>
+                <p class="font-inter text-2xl font-medium">{{ $students_count }}</p>
             </div>
 
 

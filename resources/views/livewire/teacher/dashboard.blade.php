@@ -7,13 +7,19 @@ use App\Models\SubjectClass;
 use App\Models\SubjectClassSession;
 use App\Models\Teacher;
 use App\Models\SubjectClassAttendance;
+use Illuminate\Support\Str;
 
 new class extends Component {
     public $attendances;
     public $subjectClass;
     public $subjectClassSessions;
+    public $subjectClassWithoutSubstitute;
     public $teacherId;
+    public $teacher;
     public $studentAttendances;
+    public $checkIn;
+    public $checkOut;
+    public $currentDate;
 
     // Statistik kehadiran
     public $attendanceStats = [
@@ -60,6 +66,11 @@ new class extends Component {
 
         // Perhitungan statistik per kelas
         $this->calculateClassAttendanceStatistics();
+    }
+
+    public function downloadInfo()
+    {
+        $this->dispatch('show-toast', type: 'info', message: 'Fitur unduh informasi sedang dikembangkan');
     }
 
     protected function calculateStudentAttendanceRates()
@@ -178,7 +189,11 @@ new class extends Component {
 
         // 3. Load subject classes dan SEMUA relasinya sekaligus (mengurangi >10 query)
         $this->subjectClass = SubjectClass::with(['classes.major', 'classes.student'])
-            ->where('teacher_id', $this->teacherId)
+            ->where('user_id', $this->teacherId)
+            ->get();
+
+        $this->subjectClassWithoutSubstitute = SubjectClassSession::with(['subjectClass.classes.major', 'subjectClassAttendances'])
+            ->whereNull('created_by_substitute')
             ->get();
 
         // 4. Load semua subject class sessions dan SEMUA relasi untuk perhitungan statistik (mengurangi >5 query)
@@ -206,18 +221,51 @@ new class extends Component {
         $this->calculateAttendanceStatistics();
 
         // 7. Pra-hitung nilai yang diperlukan di render
-        $this->totalHours = $this->calculateTotalHours();
+        $this->calculateTotalHours($this->teacherId);
+        $this->loadAttendanceData();
     }
 
-    private function calculateTotalHours()
+    public function loadAttendanceData()
     {
-        $totalHours = 0;
-        foreach ($this->subjectClassSessions as $session) {
-            $start = \Carbon\Carbon::parse($session->start_time);
-            $end = \Carbon\Carbon::parse($session->end_time);
-            $totalHours += $start->diffInHours($end);
-        }
-        return number_format($totalHours, 2, '.', '');
+        $today = Carbon::now()->timezone('Asia/Jakarta')->format('Y-m-d');
+        $this->currentDate = Carbon::now()->locale('id')->isoFormat('dddd, D MMMM YYYY');
+
+        // Get check-in data
+        $this->checkIn = Attendance::where('user_id', auth()->id())
+            ->where('attendance_date', $today)
+            ->where('type', 'datang')
+            ->first();
+
+        // Get check-out data
+        $this->checkOut = Attendance::where('user_id', auth()->id())
+            ->where('attendance_date', $today)
+            ->where('type', 'pulang')
+            ->first();
+
+        // Get all today's attendance records for this user
+        $this->attendanceToday = Attendance::where('user_id', auth()->id())
+            ->where('attendance_date', $today)
+            ->orderBy('check_in_time', 'desc')
+            ->get();
+    }
+
+    private function calculateTotalHours($teacherId)
+    {
+        // 1. Hitung JP dari kelas reguler (yang sudah Anda implementasikan)
+        $regularJP = SubjectClassSession::whereHas('subjectClass', function ($query) use ($teacherId) {
+            $query->where('user_id', $teacherId);
+        })
+            ->whereNull('created_by_substitute')
+            ->sum('jam_pelajaran');
+
+        // 2. Hitung JP dari kelas yang digantikan guru ini (sebagai guru pengganti)
+        $substitutionJP = SubjectClassSession::whereHas('substitutionRequest', function ($query) use ($teacherId) {
+            $query->where('substitute_teacher_id', $teacherId)->whereIn('status', ['approved', 'completed']);
+        })->sum('jam_pelajaran');
+
+        // Total JP
+
+        $this->totalHours = $regularJP + $substitutionJP;
     }
 
     public function render(): mixed
@@ -242,38 +290,215 @@ new class extends Component {
     currentQrCode: null,
     currentUserId: null,
     showQrModal: false,
+    showDownloadModal: false,
     openQrModal(qrCodePath, userId) {
         this.currentQrCode = qrCodePath;
         this.currentUserId = userId;
         this.showQrModal = true;
     },
+    openDownloadModal(userName) {
+        this.showDownloadModal = true;
+        this.currentUserName = userName;
+    },
     activeTab: 'overview'
-}">
+}" class="mt-16 md:mt-0">
+
+
+    <!-- Toast Notification Component -->
+    <div x-data="{
+        toastMessage: '',
+        toastType: '',
+        showToast: false
+    }"
+        x-on:show-toast.window="
+        const data = $event.detail[0] || $event.detail;
+        toastMessage = data.message;
+        toastType = data.type;
+        showToast = true;
+        setTimeout(() => showToast = false, 3000)
+     ">
+
+        <div x-cloak x-show="showToast" x-transition.opacity
+            :class="toastType === 'success' ? 'bg-white text-gray-500' : 'bg-red-100 text-red-700'"
+            class="fixed bottom-5 right-5 z-10 mb-4 flex w-full max-w-xs items-center rounded-lg p-4 shadow"
+            role="alert">
+
+            <template x-if="toastType === 'success'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <template x-if="toastType === 'info'">
+                <div
+                    class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 text-blue-500">
+                    <svg class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path
+                            d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                    </svg>
+                </div>
+            </template>
+
+            <div class="ml-3 text-sm font-normal" x-text="toastMessage"></div>
+
+            <button type="button" @click="showToast = false"
+                class="-mx-1.5 -my-1.5 ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-300">
+                <svg class="h-3 w-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                </svg>
+            </button>
+        </div>
+    </div>
     <!-- Header Section -->
-    <div class="flex flex-row items-center justify-between space-y-0">
+    <!-- Profile Card -->
+    <div class="flex- flex-col">
+        <div class="rounded-xl bg-gradient-to-r from-blue-200 to-blue-100 p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="h-16 w-16 overflow-hidden rounded-lg bg-red-500">
+                        <img src="{{ auth()->user()->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
+                            alt="{{ auth()->user()->name }}" class="h-full w-full object-cover">
+                    </div>
+                    <div>
+                        <h2 class="font-inter text-lg font-semibold">{{ auth()->user()->name }}</h2>
+                        <div class="flex flex-col gap-1 font-inter text-xs md:text-sm">
 
-        @php
-            $hour = \Carbon\Carbon::now('Asia/Jakarta')->hour;
-            if ($hour >= 5 && $hour < 12) {
-                $greeting = 'Selamat Pagi';
-            } elseif ($hour >= 12 && $hour < 18) {
-                $greeting = 'Selamat Siang';
-            } else {
-                $greeting = 'Selamat Malam';
-            }
-        @endphp
+                            <span
+                                class="md:tex-sm font-inter text-xs text-gray-600">{{ auth()->user()->teacher->nuptk ?? '000' }}</span>
+                        </div>
 
-        <p class="mt-1 font-inter text-sm font-medium text-gray-600 md:text-base">✨ {{ $greeting }},
-            {{ auth()->user()->name }}</p>
-        <p class="hidden font-inter text-xs font-medium text-gray-600 md:block md:text-sm">
-            {{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y') }}
-        </p>
+                    </div>
+                </div>
+
+                <button @click="openQrModal('{{ auth()->user()->qr_code_path }}', '{{ auth()->user()->id }}')"
+                    class="h-20 w-20 rounded-xl border border-white/20 bg-white/30 p-2 shadow-sm backdrop-blur-sm">
+                    {{-- <img src="{{ auth()->user()->qr_code_path ? Storage::url(auth()->user()->qr_code_path) : '/images/qr-placeholder.png' }}"
+                    alt="QR Code" class="h-full w-full"> --}}
+
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="h-18 w-18 flex items-center justify-center">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
+                    </svg>
 
 
+
+                </button>
+            </div>
+
+            <div class="flex flex-row items-end justify-between">
+                <button @click="openDownloadModal('{{ auth()->user()->name }}')"
+                    class="mt-3 flex w-auto items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="mr-2 h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Unduh Informasi
+                </button>
+                @role('kepala_sekolah')
+                    <span
+                        class="flex flex-row items-center gap-1 rounded-md bg-orange-300 px-2 py-1 text-xs text-orange-600"><svg
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="size-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        Kepala Sekolah</span>
+                @endrole
+                @hasrole('teacher')
+                    @unlessrole('kepala_sekolah')
+                        <span
+                            class="flex flex-row items-center gap-1 rounded-md bg-green-300 px-2 py-1 text-xs text-green-600"><svg
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                            </svg>Pengajar</span>
+                    @endunlessrole
+                @endhasrole
+
+            </div>
+        </div>
+
+        <!-- Current Date -->
+        <div class="mt-4 text-sm text-gray-700">
+            {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('l, j F Y') }}
+        </div>
+
+        <!-- Attendance Times -->
+        <div class="mt-3 grid grid-cols-2 gap-4">
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <div class="flex items-center">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="h-5 w-5 text-green-600">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                        </svg>
+                    </div>
+                    <span class="ml-2 text-sm font-medium">Datang</span>
+                </div>
+
+                <div class="mt-2">
+                    <h3 class="text-2xl font-bold">
+                        {{ $checkIn && $checkIn->check_in_time ? \Carbon\Carbon::parse($checkIn->check_in_time)->format('H:i') : '--:--' }}
+                    </h3>
+                    <p class="text-xs text-gray-500">
+                        {{ $checkIn
+                            ? match ($checkIn->status) {
+                                'tidak_hadir' => 'Absent',
+                                default => ucfirst($checkIn->status),
+                            }
+                            : 'Belum presensi' }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <div class="flex items-center">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-pink-500">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                        </svg>
+                    </div>
+                    <span class="ml-2 text-sm font-medium">Pulang</span>
+                </div>
+
+                <div class="mt-2">
+                    <h3 class="text-2xl font-bold">
+                        {{ $checkOut && $checkOut->check_in_time ? \Carbon\Carbon::parse($checkOut->check_in_time)->format('H:i') : '--:--' }}
+                    </h3>
+                    <p class="text-xs text-gray-500">
+                        {{ $checkOut
+                            ? match ($checkOut->status) {
+                                'hadir' => 'Tepat waktu',
+                                'pulang_cepat' => 'Pulang cepat',
+                                default => ucfirst($checkIn->status),
+                            }
+                            : 'Belum presensi' }}
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
+
+
     <!-- Navigation Tabs -->
-    <div class="mt-6 border-b border-gray-200">
+    {{-- <div class="mt-6 border-b border-gray-200">
         <ul class="-mb-px flex flex-wrap text-center text-sm font-medium">
             <li class="mr-2">
                 <a href="#" @click.prevent="activeTab = 'overview'"
@@ -297,12 +522,12 @@ new class extends Component {
                 </a>
             </li>
         </ul>
-    </div>
+    </div> --}}
 
     <!-- Overview Tab Content -->
     <div x-show="activeTab === 'overview'" class="mt-6">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <div class="hidden grid-cols-2 gap-4 sm:grid-cols-2 md:grid md:grid-cols-4">
             <div
                 class="flex flex-col gap-4 rounded-lg border border-slate-400/30 bg-white p-4 shadow-sm transition duration-300 hover:shadow-md">
                 <div>
@@ -311,8 +536,8 @@ new class extends Component {
                 <div class="flex flex-row items-center justify-between">
                     <p class="font-inter text-2xl font-medium">{{ $totalAttendances }}</p>
                     <div class="rounded-full bg-blue-100 p-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-6 text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="size-6 text-blue-600">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                         </svg>
@@ -327,8 +552,8 @@ new class extends Component {
                 <div class="flex flex-row items-center justify-between">
                     <p class="font-inter text-2xl font-medium">{{ $totalSubjectClasses }}</p>
                     <div class="rounded-full bg-green-100 p-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-6 text-green-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="size-6 text-green-600">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                         </svg>
@@ -344,8 +569,8 @@ new class extends Component {
                     <p class="font-inter text-2xl font-medium">{{ $totalSubjectClassSessions }}</p>
                     <div class="rounded-full bg-purple-100 p-2">
 
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-6 text-purple-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="size-6 text-purple-600">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                         </svg>
@@ -360,8 +585,8 @@ new class extends Component {
                 <div class="flex flex-row items-center justify-between">
                     <p class="font-inter text-2xl font-medium">{{ $totalHours }}</p>
                     <div class="rounded-full bg-amber-100 p-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-6 text-amber-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" class="size-6 text-amber-600">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -371,155 +596,95 @@ new class extends Component {
         </div>
 
         <!-- Jadwal Hari Ini -->
-        <div class="mt-8 grid grid-cols-1 gap-0 md:grid-cols-3 md:gap-6">
-            <div class="col-span-2">
-                <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-md font-inter font-semibold text-gray-800">Jadwal Hari Ini</h2>
-                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-                        {{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l') }}
-                    </span>
-                </div>
-
-                <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
-                    @php
-                        $hasClassesToday = false;
-                        $today = \Carbon\Carbon::now('Asia/Jakarta')->toDateString();
-                        foreach ($subjectClassSessions as $session) {
-                            if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today) {
-                                $hasClassesToday = true;
-                                break;
-                            }
-                        }
-                    @endphp
-
-                    @if ($hasClassesToday)
-                        <ul class="divide-y divide-gray-200">
-                            @foreach ($subjectClassSessions as $session)
-                                @if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today)
-                                    <li class="flex items-center justify-between p-4 hover:bg-gray-50">
-                                        <div class="flex items-center space-x-4">
-                                            <div
-                                                class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-500">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="h-5 w-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h3 class="font-medium text-gray-900">{{ $session->subject_title }}
-                                                </h3>
-                                                <p class="text-sm text-gray-500">
-                                                    {{ $session->subjectClass->class_name }} -
-                                                    {{ $session->subjectClass->classes->name }}</p>
-                                            </div>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-xs font-medium text-gray-900 md:text-sm">
-                                                {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} -
-                                                {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}</p>
-                                            <a href="{{ route('session.attendance', $session) }}" wire:navigate
-                                                class="mt-1 inline-block whitespace-nowrap font-inter text-xs text-blue-600 hover:underline">Kelola
-                                                Presensi</a>
-                                        </div>
-                                    </li>
-                                @endif
-                            @endforeach
-                        </ul>
-                    @else
-                        <div class="flex flex-col items-center justify-center p-8">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-12 w-12 text-gray-300">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                            </svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada jadwal hari ini</h3>
-                            <p class="mt-1 text-center text-sm text-gray-500">Anda tidak memiliki kelas yang
-                                dijadwalkan untuk hari
-                                ini.</p>
+        @hasrole('teacher')
+            @unlessrole('kepala_sekolah')
+                <div class="mt-8 grid grid-cols-1 gap-0 md:grid-cols-1 md:gap-6">
+                    <div class="col-span-2">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h2 class="text-md font-inter font-medium text-gray-800">Jadwal Hari Ini</h2>
+                            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+                                <a href="{{ route('classes.attendances') }}">+ Buat kelas</a>
+                            </span>
                         </div>
-                    @endif
-                </div>
-                @if ($hasClassesToday)
-                    <div class="mt-2 flex flex-row justify-center">
-                        <a href="{{ route('classes.attendances') }}" wire:navigate
-                            class="mt-4 rounded-full bg-gray-400 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-gray-300">
-                            Tambah Pertemuan +
-                        </a>
+
+                        <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                            @php
+                                $hasClassesToday = false;
+                                $today = \Carbon\Carbon::now('Asia/Jakarta')->toDateString();
+                                foreach ($subjectClassSessions as $session) {
+                                    if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today) {
+                                        $hasClassesToday = true;
+                                        break;
+                                    }
+                                }
+                            @endphp
+
+                            @if ($hasClassesToday)
+                                <ul class="divide-y divide-gray-200">
+                                    @foreach ($subjectClassSessions as $session)
+                                        @if (\Carbon\Carbon::parse($session->class_date)->toDateString() === $today)
+                                            <li class="w-full">
+                                                <a href="{{ route('session.attendance', $session) }}"
+                                                    class="block w-full hover:bg-gray-50">
+                                                    <div class="flex items-center p-4">
+                                                        <div
+                                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-500">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                                class="h-5 w-5">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div class="ml-4 flex-1">
+                                                            <h3 class="md:text-md text-sm font-medium text-gray-900">
+                                                                {{ $session->subjectClass->classes->name }} -
+                                                                {{ $session->subjectClass->classes->major->code }}
+                                                            </h3>
+                                                            <div class="flex items-center justify-between">
+                                                                <p
+                                                                    class="overflow-hidden truncate text-xs text-gray-500 md:text-sm">
+                                                                    {{ $session->subjectClass->class_name }} -
+                                                                    {{ Str::limit($session->subject_title, 30, '...') }}
+                                                                </p>
+
+                                                                <p class="text-xs font-medium text-gray-900 md:text-sm">
+                                                                    {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }}
+                                                                    -
+                                                                    {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                        @endif
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div class="flex flex-col items-center justify-center p-8">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="h-12 w-12 text-gray-300">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada jadwal hari ini</h3>
+                                    <p class="mt-1 text-center text-sm text-gray-500">Anda tidak memiliki kelas yang
+                                        dijadwalkan untuk hari
+                                        ini.</p>
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
-                @endif
-            </div>
 
-            <!-- Quick Links and Notes -->
-            <div class="mt-5 space-y-6 sm:mt-0">
-                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                    <h2 class="text-md mb-4 font-inter font-semibold text-gray-800">Aksi Cepat</h2>
-                    <div class="space-y-3">
 
-                        <button
-                            @click="openQrModal('{{ auth()->user()->qr_code_path }}', '{{ auth()->user()->id }}')"
-                            class="flex w-full items-center space-x-3 rounded-md bg-blue-50 p-3 font-inter text-blue-700 transition hover:bg-blue-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="font-inter text-sm">Tampilkan QR Code</span>
-                        </button>
-                        <a href="#"
-                            class="flex items-center space-x-3 rounded-md bg-purple-50 p-3 font-inter text-purple-700 transition hover:bg-purple-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="font-inter text-sm">Buat Sesi Baru</span>
-                        </a>
-                        <a href="#"
-                            class="flex items-center space-x-3 rounded-md bg-green-50 p-3 text-green-700 transition hover:bg-green-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                            </svg>
-                            <span class="font-inter text-sm">Unduh Laporan</span>
-                        </a>
-                    </div>
                 </div>
-
-                <!-- Reminder Section -->
-                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                    <h2 class="mb-4 text-lg font-semibold text-gray-800">Pengingat</h2>
-
-                    @if (count($subjectClassSessions) > 0)
-                        <ul class="space-y-3">
-                            <li class="flex items-start space-x-3 rounded-md bg-yellow-50 p-3 text-yellow-800">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="mt-0.5 h-5 w-5 flex-shrink-0">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                                </svg>
-                                <span class="text-sm">Perbarui presensi untuk pertemuan terakhir</span>
-                            </li>
-                            <li class="flex items-start space-x-3 rounded-md bg-blue-50 p-3 text-blue-800">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="mt-0.5 h-5 w-5 flex-shrink-0">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                </svg>
-                                <span class="text-sm">Jadwalkan pertemuan untuk minggu depan</span>
-                            </li>
-                        </ul>
-                    @else
-                        <p class="text-sm text-gray-500">Tidak ada pengingat saat ini.</p>
-                    @endif
-                </div>
-            </div>
-        </div>
+            @endunlessrole
+        @endhasrole
 
         <!-- Recent Classes -->
-        <div class="mt-8">
+        {{-- <div class="mt-8">
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="flex items-center space-x-2 text-lg font-semibold text-gray-800">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -593,389 +758,97 @@ new class extends Component {
                     </div>
                 @endforelse
             </div>
-        </div>
-    </div>
+        </div> --}}
 
-    <!-- Classes Tab Content -->
-    <div x-show="activeTab === 'classes'" class="mt-6" x-cloak>
-        <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-800">Daftar Mata Pelajaran</h2>
-            <a href="{{ route('classes.attendances') }}"
-                class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                Buat Kelas Baru
-            </a>
-        </div>
+        {{-- Today Attendance History --}}
+        <!-- Attendance History -->
+        @role('kepala_sekolah')
+            <div class="mt-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-medium">Riwayat Kehadiran</h2>
 
-        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-            <!-- Tampilan untuk layar desktop -->
-            <div class="hidden overflow-x-auto md:block">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Mata Pelajaran
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Kelas
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Jurusan
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Jumlah Pertemuan
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Total Jam
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                Aksi
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 bg-white">
-                        @forelse ($subjectClass as $class)
-                            <tr class="hover:bg-gray-50">
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <div class="flex items-center">
-                                        <div class="h-10 w-10 flex-shrink-0">
-                                            <div
-                                                class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="h-5 w-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $class->class_name }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">{{ $class->class_code }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <div class="text-sm text-gray-900">{{ $class->classes->name }}</div>
-                                </td>
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <div class="text-sm text-gray-900">{{ $class->classes->major->name }}</div>
-                                </td>
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <div class="text-sm text-gray-900">
-                                        {{ $subjectClassSessions->where('subject_class_id', $class->id)->count() }}
-                                    </div>
-                                </td>
-                                <td class="whitespace-nowrap px-6 py-4">
-                                    <div class="text-sm text-gray-900">
-                                        @php
-                                            $totalClassHours = 0;
-                                            foreach (
-                                                $subjectClassSessions->where('subject_class_id', $class->id)
-                                                as $session
-                                            ) {
-                                                $start = \Carbon\Carbon::parse($session->start_time);
-                                                $end = \Carbon\Carbon::parse($session->end_time);
-                                                $totalClassHours += $start->diffInHours($end);
-                                            }
-                                        @endphp
-                                        {{ number_format($totalClassHours, 2) }}
-                                    </div>
-                                </td>
-                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                    <a href="{{ route('subject.detail', $class) }}"
-                                        class="text-blue-600 hover:text-blue-900">Detail</a>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="h-10 w-10 text-gray-300">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                        </svg>
-                                        <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data</h3>
-                                        <p class="mt-1 text-sm text-gray-500">Anda belum memiliki kelas mata pelajaran.
-                                        </p>
-                                        <a href="{{ route('classes.attendances') }}"
-                                            class="mt-3 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                                            Buat Kelas
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                </div>
 
-            <!-- Tampilan untuk layar mobile -->
-            <div class="block md:hidden">
-                @forelse ($subjectClass as $class)
-                    <div class="border-b border-gray-200 p-4" href="{{ route('subject.detail', $class) }}">
-                        <div class="flex flex-row items-center justify-between">
-                            <div class="flex flex-row items-center">
-                                <div
-                                    class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-900 md:text-base">
-                                        {{ $class->class_name }}</h3>
-                                    <div class="mt-1 flex flex-row items-center gap-1 whitespace-normal">
-                                        <span
-                                            class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                            {{ Str::wordCount($class->classes->major->name) > 2 ? $class->classes->major->code : $class->classes->major->name }}
-                                        </span>
-                                        <span
-                                            class="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
-                                            {{ $class->classes->name }}
-                                        </span>
-                                    </div>
-                                </div>
+                <div class="mt-3 space-y-3">
+                    @if ($checkOut)
+                        <div class="flex items-center rounded-lg bg-white p-3 shadow-sm">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-pink-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-pink-500">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                </svg>
                             </div>
-                            <div>
-                                <p class="whitespace-nowrap text-xs text-gray-500">Jumlah Pertemuan</p>
-                                <p class="text-end text-sm text-gray-900">
-                                    {{ $subjectClassSessions->where('subject_class_id', $class->id)->count() }}
+                            <div class="ml-3">
+                                <p class="font-medium">Pulang</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ \Carbon\Carbon::parse($checkOut->attendance_date)->format('d F Y') }}
+                                </p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <p class="font-bold">
+                                    {{ \Carbon\Carbon::parse($checkOut->check_in_time)->format('H:i') }}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    {{ match ($checkOut->status) {
+                                        'hadir' => 'Tepat waktu',
+                                        'pulang_cepat' => 'Pulang cepat',
+                                        default => ucfirst($checkIn->status),
+                                    } }}
                                 </p>
                             </div>
                         </div>
+                    @endif
 
 
 
-                        <div class="mt-4 flex justify-end">
-                            <a href="{{ route('subject.detail', $class) }}"
-                                class="text-xs font-medium text-blue-600 hover:text-blue-900 md:text-sm">
-                                Lihat Detail
-                            </a>
+                    @if ($checkIn)
+                        <div class="flex items-center rounded-lg bg-white p-3 shadow-sm">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-green-600">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="font-medium">Datang</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ \Carbon\Carbon::parse($checkIn->attendance_date)->timezone('asia/jakarta')->format('d F Y') }}
+                                </p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <p class="font-bold">
+                                    {{ $checkIn && $checkIn->check_in_time ? \Carbon\Carbon::parse($checkIn->check_in_time)->format('H:i') : '--:--' }}
+                                </p>
+                                <p class="text-xs text-gray-500">{{ ucfirst($checkIn->status) }}</p>
+                            </div>
                         </div>
-                    </div>
-                @empty
-                    <div class="p-6 text-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke-width="1.5" stroke="currentColor" class="mx-auto h-10 w-10 text-gray-300">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data</h3>
-                        <p class="mt-1 text-sm text-gray-500">Anda belum memiliki kelas mata pelajaran.</p>
-                        <a href="{{ route('classes.attendances') }}"
-                            class="mt-3 inline-block rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                            Buat Kelas
-                        </a>
-                    </div>
-                @endforelse
+                    @endif
+
+                    @if (!$checkIn && !$checkOut)
+                        <div
+                            class="flex flex-col items-center justify-center rounded-lg bg-white p-6 text-center shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="mb-2 h-10 w-10 text-gray-400">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" />
+                            </svg>
+
+                            <p class="font-inter text-sm text-gray-500">Belum ada data kehadiran hari ini.</p>
+                        </div>
+                    @endif
+                </div>
             </div>
-        </div>
+        @endrole
+
+
     </div>
 
-    <!-- Analytics Tab Content -->
-    <div x-show="activeTab === 'analytics'" class="mt-6" x-cloak>
-        <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 class="mb-4 text-lg font-semibold text-gray-800">Statistik Kehadiran</h2>
 
-            <!-- Overview Statistics Cards -->
-            <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
-                <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex flex-col items-start md:flex-row">
-                        <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-green-600">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div class="mt-2 md:mt-0">
-                            <p class="text-xs font-medium text-gray-500 sm:text-sm">Tingkat Kehadiran</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                {{ number_format($attendanceStats['total_attendance_rate'], 1) }}%</p>
-                            <p class="mt-1 text-xs text-green-600">Keseluruhan</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex flex-col items-start md:flex-row">
-                        <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-yellow-600">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                            </svg>
-                        </div>
-                        <div class="mt-2 md:mt-0">
-                            <p class="text-xs font-medium text-gray-500 md:text-sm">Izin & Sakit</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                {{ number_format($attendanceStats['izin_sakit_rate'], 1) }}%</p>
-                            <p class="mt-1 text-xs text-gray-500">Dari Total Pertemuan</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex flex-col items-start md:flex-row">
-                        <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-red-600">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </div>
-                        <div class="mt-2 md:mt-0">
-                            <p class="text-xs font-medium text-gray-500 md:text-sm">Tanpa Keterangan</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                {{ number_format($attendanceStats['tanpa_keterangan_rate'], 1) }}%</p>
-                            <p class="mt-1 text-xs text-red-600">Dari Total Pertemuan</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-lg bg-white p-4 shadow-sm">
-                    <div class="flex flex-col items-start md:flex-row">
-                        <div class="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-purple-600">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
-                            </svg>
-                        </div>
-                        <div class="mt-2 md:mt-0">
-                            <p class="text-xs font-medium text-gray-500 md:text-sm">Siswa yang Perlu Perhatian</p>
-                            <p class="text-2xl font-bold text-gray-900">
-                                {{ $attendanceStats['students_needing_attention'] }}</p>
-                            <p class="mt-1 text-xs text-gray-500">Kehadiran < 70%</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Attendance Chart placeholder -->
-            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div class="flex h-64 flex-col items-center justify-center">
-                    <canvas id="attendance-chart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Class Comparison -->
-        <div class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <h2 class="mb-4 text-lg font-semibold text-gray-800">Perbandingan Kehadiran Antar Kelas</h2>
-
-            <div class="overflow-hidden rounded-lg border border-gray-200">
-                @if (count($classAttendanceStats) > 0)
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                    Kelas</th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                    Tingkat Kehadiran</th>
-                                <th scope="col"
-                                    class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                                    Izin/Sakit</th>
-                                <th scope="col"
-                                    class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                                    Tanpa Keterangan</th>
-                                <th scope="col"
-                                    class="hidden px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                                    Tren</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                            @foreach ($classAttendanceStats as $class)
-                                <tr>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                        {{ $class['class_name'] }} - {{ $class['name'] }}
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <div class="flex items-center">
-                                            <div class="w-full max-w-xs">
-                                                <div class="h-2.5 w-full rounded-full bg-gray-200">
-                                                    <div class="h-2.5 rounded-full bg-green-600"
-                                                        style="width: {{ $class['attendance_rate'] }}%"></div>
-                                                </div>
-                                            </div>
-                                            <span
-                                                class="ml-3 text-sm text-gray-900">{{ $class['attendance_rate'] }}%</span>
-                                        </div>
-                                    </td>
-                                    <td class="hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 sm:table-cell">
-                                        {{ $class['izin_sakit_rate'] }}%
-                                    </td>
-                                    <td class="hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 sm:table-cell">
-                                        {{ $class['tanpa_keterangan_rate'] }}%
-                                    </td>
-                                    <td class="hidden whitespace-nowrap px-6 py-4 text-sm sm:table-cell">
-                                        @if ($class['trend'] > 0)
-                                            <span class="inline-flex items-center text-green-600">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="mr-1 h-4 w-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                                                </svg>
-                                                +{{ $class['trend'] }}%
-                                            </span>
-                                        @elseif($class['trend'] < 0)
-                                            <span class="inline-flex items-center text-red-600">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="mr-1 h-4 w-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l5.94-2.28m-5.94 2.28l-2.28 5.941" />
-                                                </svg>
-                                                {{ $class['trend'] }}%
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center text-gray-500">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="mr-1 h-4 w-4">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M18.75 7.5h-7.5A2.25 2.25 0 009 9.75v7.5A2.25 2.25 0 0011.25 19.5h7.5A2.25 2.25 0 0021 17.25v-7.5A2.25 2.25 0 0018.75 7.5z" />
-                                                </svg>
-                                                0%
-                                            </span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <div class="flex flex-col items-center justify-center p-8 text-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke-width="1.5" stroke="currentColor" class="h-12 w-12 text-gray-300">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada data perbandingan kelas</h3>
-                        <p class="mt-1 text-sm text-gray-500">Data akan muncul setelah Anda memiliki pertemuan kelas
-                            dengan presensi.</p>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
 
     <!-- QR Modal -->
-    <div x-show="showQrModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    <div x-show="showQrModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-5"
         x-cloak @keydown.escape.window="showQrModal = false">
         <div class="w-full max-w-md rounded-lg bg-white p-6">
             <div class="mb-4 flex items-center justify-between">
@@ -1015,6 +888,47 @@ new class extends Component {
                     class="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300">
                     Tutup
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div x-show="showDownloadModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-5" x-cloak
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="max-h-[90vh] w-full max-w-3xl transform overflow-auto rounded-lg bg-white p-6 shadow-xl transition-all"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-xl font-medium text-gray-900" x-text="`Detail Kartu: ${currentUserName}`"></h2>
+                <button @click="showDownloadModal = false" class="rounded-md p-1 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-5 text-gray-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+
+            <div class="rounded-lg border border-gray-200">
+                <!-- Detail konten akan di-load secara dinamis -->
+                <p class="p-4 text-center text-gray-500">
+                    Kartu Pengguna belum tersedia pada tahap percobaan.
+                </p>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button @click="showDownloadModal = false"
+                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Tutup
+                </button>
+
             </div>
         </div>
     </div>
